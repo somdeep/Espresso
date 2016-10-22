@@ -36,6 +36,8 @@ rule token = parse
 | "int"    { INT }
 | "bool"   { BOOL }
 | "void"   { VOID }
+| "String" { STRING }
+| "float"  { FLOAT }
 | "true"   { TRUE }
 | "false"  { FALSE }
 | ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
