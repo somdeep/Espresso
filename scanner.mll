@@ -5,6 +5,7 @@
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
 | "/*"     { comment lexbuf }           (* Comments *)
+| "//"	   { sincom lexbuf }			(* Single-Line comments *)
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
@@ -16,6 +17,8 @@ rule token = parse
 | '*'      { TIMES }
 | '/'      { DIVIDE }
 | '='      { ASSIGN }
+| '%'	   { MODULUS }
+| "**"	   { POWER }
 | "=="     { EQ }
 | "!="     { NEQ }
 | '<'      { LT }
@@ -43,3 +46,10 @@ rule token = parse
 and comment = parse
   "*/" { token lexbuf }
 | _    { comment lexbuf }
+
+
+and sincom = parse
+  "\n" { token lexbuf }
+| _    { sincom lexbuf }
+
+
