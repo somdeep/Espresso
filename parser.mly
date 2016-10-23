@@ -10,6 +10,7 @@ open Ast
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID STRING FLOAT
 %token <int> LITERAL
 %token <string> ID
+%token <string> STRLIT
 %token EOF
 
 %nonassoc NOELSE
@@ -87,6 +88,7 @@ expr_opt:
 
 expr:
     LITERAL          { Literal($1) }
+  | STRLIT           { Strlit($1) }
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
