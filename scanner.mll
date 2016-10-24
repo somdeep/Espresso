@@ -11,6 +11,7 @@ rule token = parse
 | '{'      { LBRACE }
 | '}'      { RBRACE }
 | ';'      { SEMI }
+| ':'      { COLON }
 | ','      { COMMA }
 | '+'      { PLUS }
 | '-'      { MINUS }
@@ -32,6 +33,7 @@ rule token = parse
 | "else"   { ELSE }
 | "for"    { FOR }
 | "while"  { WHILE }
+| "foreach" { FOREACH }
 | "return" { RETURN }
 | "int"    { INT }
 | "bool"   { BOOL }
