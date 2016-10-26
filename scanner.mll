@@ -5,11 +5,13 @@
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
 | "/*"     { comment lexbuf }           (* Comments *)
-| "//"	   { sincom lexbuf }			(* Single-Line comments *)
+| "//"	   { sincom lexbuf }		(* Single-Line comments *)
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
 | '}'      { RBRACE }
+| '['      { LSQUARE }			(* Square brackets for Arrays *)
+| ']'      { RSQUARE }
 | ';'      { SEMI }
 | ':'      { COLON }
 | ','      { COMMA }
@@ -33,7 +35,7 @@ rule token = parse
 | "else"   { ELSE }
 | "for"    { FOR }
 | "while"  { WHILE }
-| "foreach" { FOREACH }
+| "foreach" { FOREACH }			(* Foreach loop *)
 | "return" { RETURN }
 | "int"    { INT }
 | "bool"   { BOOL }

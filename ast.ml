@@ -38,7 +38,21 @@ type func_decl = {
     body : stmt list;
   }
 
-type program = bind list * func_decl list
+type var_decl = Vdecl of typ * string
+
+type cbody = {
+  fields : var_decl list;
+  methods : func_decl list;
+
+}
+
+type cdecl = {
+  cname : string;
+  cbody : cbody;
+}
+
+(* type program = bind list * func_decl list *)
+type program = cdecl 
 
 (* Pretty-printing functions *)
 
@@ -96,6 +110,7 @@ let string_of_typ = function
   | Void -> "void"
   | String -> "String"
   | Float -> "float"
+
 
 let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
 

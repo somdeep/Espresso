@@ -4,7 +4,8 @@
 open Ast
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA COLON
+%token CLASS
+%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT
@@ -31,15 +32,33 @@ open Ast
 %%
 
 program:
-  decls EOF { $1 }
+  cdecl EOF { $1 }
 
-decls:
-   /* nothing */ { [], [] }
- | decls vdecl { ($2 :: fst $1), snd $1 }
- | decls fdecl { fst $1, ($2 :: snd $1) }
+cdecl:
+   CLASS ID LBRACE cbody RBRACE
+   { {
+     cname = $2;
+     cbody = $4
+     } }
+
+cbody:
+      { {
+       fields = [];
+       methods = []
+     } }
+    | cbody vdecl { {
+       fields = $2 :: $1.fields;
+       methods = $1.methods
+     } }
+    | cbody fdecl { {
+       fields = $1.fields;
+       methods = $2 :: $1.methods
+     } }
+   
+  
 
 fdecl:
-   typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
+   typ ID LPAREN formals_opt RPAREN LBRACE formals_opt stmt_list RBRACE
      { { typ = $1;
 	 fname = $2;
 	 formals = $4;
@@ -61,12 +80,8 @@ typ:
   | STRING { String }
   | FLOAT { Float }
 
-vdecl_list:
-    /* nothing */    { [] }
-  | vdecl_list vdecl { $2 :: $1 }
-
 vdecl:
-   typ ID SEMI { ($1, $2) }
+   typ ID SEMI { Vdecl($1, $2) }
 
 stmt_list:
     /* nothing */  { [] }
@@ -115,6 +130,7 @@ expr:
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+
 
 actuals_opt:
     /* nothing */ { [] }
