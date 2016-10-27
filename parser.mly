@@ -58,8 +58,8 @@ cbody:
   
 
 fdecl:
-   typ ID LPAREN formals_opt RPAREN LBRACE formals_opt stmt_list RBRACE
-     { { typ = $1;
+   data_typ ID LPAREN formals_opt RPAREN LBRACE formals_opt stmt_list RBRACE
+     { { data_typ = $1;
 	 fname = $2;
 	 formals = $4;
 	 locals = List.rev $7;
@@ -70,9 +70,12 @@ formals_opt:
   | formal_list   { List.rev $1 }
 
 formal_list:
-    typ ID                   { [($1,$2)] }
-  | formal_list COMMA typ ID { ($3,$4) :: $1 }
+    data_typ ID                   { [($1,$2)] }
+  | formal_list COMMA data_typ ID { ($3,$4) :: $1 }
 
+data_typ:
+    typ  { Datatype($1) }
+  |   array_typ { $1 }
 typ:
     INT { Int }
   | BOOL { Bool }
@@ -80,8 +83,15 @@ typ:
   | STRING { String }
   | FLOAT { Float }
 
+array_typ:
+    typ LSQUARE brackets RSQUARE {Array($1, $3)}
+
+brackets:
+             { 1 }
+  | brackets LSQUARE RSQUARE {$1 + 1 }  
+
 vdecl:
-   typ ID SEMI { Vdecl($1, $2) }
+   data_typ ID SEMI { Vdecl($1, $2) }
 
 stmt_list:
     /* nothing */  { [] }
@@ -97,7 +107,7 @@ stmt:
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-  | FOREACH LPAREN typ expr COLON expr RPAREN stmt
+  | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
      { Foreach($3, $4, $6, $8) }
 
 expr_opt:
