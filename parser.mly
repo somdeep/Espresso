@@ -8,7 +8,7 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR
+%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK
 %token <int> LITERAL
 %token <string> ID
 %token <string> STRLIT
@@ -111,6 +111,7 @@ stmt:
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
      { Foreach($3, $4, $6, $8) }
+  | BREAK SEMI { Break Noexpr }
 
 expr_opt:
     /* nothing */ { Noexpr }

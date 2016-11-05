@@ -45,10 +45,11 @@ rule token = parse
 | "char"   { CHAR }
 | "true"   { TRUE }
 | "false"  { FALSE }
+| "break"  { BREAK }
 | ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | "^\".*\"$"  as lxm { STRLIT(lxm) }
-| "^'.?'$" as lxm { CHARLIT(lxm) }
+| "^'.?'$" as lxm { CHARLIT(String.get lxm 0) }
 | ['0'-'9']+['.']['0'-'9']+ as lxm { FLOATLIT(float_of_string lxm) }
 | eof { EOF }
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
