@@ -8,10 +8,11 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT
+%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR
 %token <int> LITERAL
 %token <string> ID
 %token <string> STRLIT
+%token <char> CHARLIT
 %token <float> FLOATLIT
 %token EOF
 
@@ -82,6 +83,7 @@ typ:
   | VOID { Void }
   | STRING { String }
   | FLOAT { Float }
+  | CHAR { Char }
 
 array_typ:
     typ LSQUARE brackets RSQUARE {Array($1, $3)}
@@ -116,6 +118,7 @@ expr_opt:
 
 expr:
     LITERAL          { Literal($1) }
+  | CHARLIT          { Charlit($1) }
   | STRLIT           { Strlit($1) }
   | FLOATLIT         { Floatlit($1) }
   | TRUE             { BoolLit(true) }
