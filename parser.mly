@@ -56,23 +56,28 @@ cbody:
        methods = $2 :: $1.methods
      } }
    
-  
+
+fname:
+	ID { $1 }
 
 fdecl:
-   data_typ ID LPAREN formals_opt RPAREN LBRACE formals_opt stmt_list RBRACE
+   data_typ fname LPAREN formals_opt RPAREN LBRACE stmt_list RBRACE
      { { data_typ = $1;
 	 fname = $2;
 	 formals = $4;
 	 locals = List.rev $7;
-	 body = List.rev $8 } }
+	 body = List.rev $7 } }
 
 formals_opt:
     /* nothing */ { [] }
   | formal_list   { List.rev $1 }
 
 formal_list:
-    data_typ ID                   { [($1,$2)] }
-  | formal_list COMMA data_typ ID { ($3,$4) :: $1 }
+    formal                   { [$1] }
+  | formal_list COMMA formal { $3 :: $1 }
+
+formal:
+ 	data_typ ID {Formal($1,$2)}
 
 data_typ:
     typ  { Datatype($1) }
@@ -92,6 +97,7 @@ brackets:
              { 1 }
   | brackets LSQUARE RSQUARE {$1 + 1 }  
 
+/* This is only for the class data members  */
 vdecl:
    data_typ ID SEMI { Vdecl($1, $2) }
 
@@ -112,7 +118,9 @@ stmt:
   | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
      { Foreach($3, $4, $6, $8) }
   | BREAK SEMI { Break Noexpr }
-
+  | data_typ ID  SEMI { Local($1,$2, Noexpr) } 
+ /* | data_typ ID ASSIGN expr SEMI { Local($1, $2, $4) } 
+*/
 expr_opt:
     /* nothing */ { Noexpr }
   | expr          { $1 }
@@ -141,10 +149,17 @@ expr:
   | expr OR     expr { Binop($1, Or,    $3) }
   | MINUS expr %prec NEG { Unop(Neg, $2) }
   | NOT expr         { Unop(Not, $2) }
-  | ID ASSIGN expr   { Assign($1, $3) }
+  | expr ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+ /* | typ ID RSQUARE { ArrayCreate(Datatype($1), List.rev $2) } */
+  | ID LSQUARE expr RSQUARE { ArrayAccess($1, $3) }
 
+/*
+bracket_args:
+	LSQUARE expr { [$2] }
+    |   bracket_args RSQUARE LSQUARE expr { $4 :: $1 }
+*/
 
 actuals_opt:
     /* nothing */ { [] }
