@@ -5,7 +5,9 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq | Mo
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Void | String | Float
+type typ = Int | Bool | Void | String | Float | ObjTyp
+
+type data_typ = ArrayType of typ * int | DataType of typ | Hashmaptype of typ * typ
 
 type bind = typ * string
 
@@ -35,7 +37,7 @@ type func_decl = {
     typ : typ;
     fname : string;
     formals : bind list;
-    locals : bind list;
+    (* locals : bind list; *)
     body : stmt list;
   }
 
@@ -53,7 +55,7 @@ type cdecl = {
 }
 
 (* type program = bind list * func_decl list *)
-type program = cdecl 
+type program = Program of cdecl 
 
 (* Pretty-printing functions *)
 
@@ -116,14 +118,14 @@ let string_of_typ = function
 
 let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
 
-let string_of_fdecl fdecl =
-  string_of_typ fdecl.typ ^ " " ^
-  fdecl.fname ^ "(" ^ String.concat ", " (List.map snd fdecl.formals) ^
+let string_of_func_decl func_decl =
+  string_of_typ func_decl.typ ^ " " ^
+  func_decl.fname ^ "(" ^ String.concat ", " (List.map snd func_decl.formals) ^
   ")\n{\n" ^
-  String.concat "" (List.map string_of_vdecl fdecl.locals) ^
-  String.concat "" (List.map string_of_stmt fdecl.body) ^
+ (* String.concat "" (List.map string_of_vdecl func_decl.locals) ^ *)
+  String.concat "" (List.map string_of_stmt func_decl.body) ^
   "}\n"
 
 let string_of_program (vars, funcs) =
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_fdecl funcs)
+  String.concat "\n" (List.map string_of_func_decl funcs)

@@ -93,14 +93,10 @@ typ:
   | CLASS ID {ObjTyp($2)}
 
 hashmap_typ:
-  HASHMAP LT typ COMMA typ GT ID {Hashmap($3,$5,$7)}
+  HASHMAP LT typ COMMA typ GT {Hashmaptype($3,$5)}
 
 array_typ:
-    typ LSQUARE brackets RSQUARE {Array($1, $3)}
-
-brackets:
-             { 1 }
-  | brackets RSQUARE LSQUARE {$1 + 1 }  
+    typ LSQUARE LITERAL RSQUARE {Arraytype($1, $3)}
 
 /* This is only for the class data members  */
 vdecl:
@@ -123,7 +119,7 @@ stmt:
   | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
      { Foreach($3, $4, $6, $8) }
   | BREAK SEMI { Break Noexpr }
-  | data_typ ID  SEMI { Local($1,$2, Noexpr) } 
+  | typ ID  SEMI { Local($1,$2, Noexpr) }
  /* | data_typ ID ASSIGN expr SEMI { Local($1, $2, $4) } 
 */
 expr_opt:
