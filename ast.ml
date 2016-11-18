@@ -5,22 +5,25 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq | Mo
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Void | String | Float | ObjTyp
+(* These are the primitive datatypes supported by espresso, along with Object *)
+type typ = Int | Bool | Void | String | Float | ObjTyp | Char
 
 type data_typ = ArrayType of typ * int | DataType of typ | Hashmaptype of typ * typ
 
-type bind = typ * string
+type formal = typ * string
 
 type expr =
     Literal of int
   | Strlit of string
   | Floatlit of float
   | BoolLit of bool
+  | Charlit of char
   | Id of string
   | Binop of expr * op * expr
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list
+  | ArrayAccess of string * expr
   | Noexpr
 
 type stmt =
@@ -32,12 +35,12 @@ type stmt =
   | While of expr * stmt
   | Foreach of typ * expr * expr * stmt
   | Break of expr
+  | Local of data_typ * string
 
 type func_decl = {
-    typ : typ;
+    ret_typ : typ;
     fname : string;
-    formals : bind list;
-    (* locals : bind list; *)
+    formals : formal list;
     body : stmt list;
   }
 
@@ -119,7 +122,7 @@ let string_of_typ = function
 let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
 
 let string_of_func_decl func_decl =
-  string_of_typ func_decl.typ ^ " " ^
+  string_of_typ func_decl.ret_typ ^ " " ^
   func_decl.fname ^ "(" ^ String.concat ", " (List.map snd func_decl.formals) ^
   ")\n{\n" ^
  (* String.concat "" (List.map string_of_vdecl func_decl.locals) ^ *)

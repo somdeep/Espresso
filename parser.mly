@@ -119,7 +119,7 @@ stmt:
   | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
      { Foreach($3, $4, $6, $8) }
   | BREAK SEMI { Break Noexpr }
-  | typ ID  SEMI { Local($1,$2, Noexpr) }
+  | data_typ ID  SEMI { Local($1,$2) }
  /* | data_typ ID ASSIGN expr SEMI { Local($1, $2, $4) } 
 */
 expr_opt:
