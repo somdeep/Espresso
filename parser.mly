@@ -8,7 +8,7 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK
+%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK HASHMAP
 %token <int> LITERAL
 %token <string> ID
 %token <string> STRLIT
@@ -82,6 +82,7 @@ formal:
 data_typ:
     typ  { Datatype($1) }
   |   array_typ { $1 }
+  |   hashmap_typ { $1 }
 typ:
     INT { Int }
   | BOOL { Bool }
@@ -89,13 +90,17 @@ typ:
   | STRING { String }
   | FLOAT { Float }
   | CHAR { Char }
+  | CLASS ID {ObjTyp($2)}
+
+hashmap_typ:
+  HASHMAP LT typ COMMA typ GT ID {Hashmap($3,$5,$7)}
 
 array_typ:
     typ LSQUARE brackets RSQUARE {Array($1, $3)}
 
 brackets:
              { 1 }
-  | brackets LSQUARE RSQUARE {$1 + 1 }  
+  | brackets RSQUARE LSQUARE {$1 + 1 }  
 
 /* This is only for the class data members  */
 vdecl:
@@ -152,14 +157,7 @@ expr:
   | expr ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
- /* | typ ID RSQUARE { ArrayCreate(Datatype($1), List.rev $2) } */
   | ID LSQUARE expr RSQUARE { ArrayAccess($1, $3) }
-
-/*
-bracket_args:
-	LSQUARE expr { [$2] }
-    |   bracket_args RSQUARE LSQUARE expr { $4 :: $1 }
-*/
 
 actuals_opt:
     /* nothing */ { [] }

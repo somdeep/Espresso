@@ -46,6 +46,7 @@ rule token = parse
 | "true"   { TRUE }
 | "false"  { FALSE }
 | "break"  { BREAK }
+| "hashmap" {HASHMAP}
 | ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | "^\".*\"$"  as lxm { STRLIT(lxm) }
