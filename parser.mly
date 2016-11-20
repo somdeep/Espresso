@@ -33,7 +33,7 @@ open Ast
 %%
 
 program:
-  cdecl EOF { $1 }
+  cdecl EOF { Program($1) }
 
 cdecl:
    CLASS ID LBRACE cbody RBRACE
@@ -51,7 +51,7 @@ cbody:
        fields = $2 :: $1.fields;
        methods = $1.methods
      } }
-    | cbody fdecl { {
+    | cbody func_decl { {
        fields = $1.fields;
        methods = $2 :: $1.methods
      } }
@@ -60,12 +60,11 @@ cbody:
 fname:
 	ID { $1 }
 
-fdecl:
+func_decl:
    data_typ fname LPAREN formals_opt RPAREN LBRACE stmt_list RBRACE
-     { { data_typ = $1;
+     { { typ = $1;
 	 fname = $2;
 	 formals = $4;
-	 locals = List.rev $7;
 	 body = List.rev $7 } }
 
 formals_opt:
@@ -80,7 +79,7 @@ formal:
  	data_typ ID {Formal($1,$2)}
 
 data_typ:
-    typ  { Datatype($1) }
+    typ  { $1 }
   |   array_typ { $1 }
   |   hashmap_typ { $1 }
 typ:
@@ -96,7 +95,7 @@ hashmap_typ:
   HASHMAP LT typ COMMA typ GT {Hashmaptype($3,$5)}
 
 array_typ:
-    typ LSQUARE LITERAL RSQUARE {Arraytype($1, $3)}
+    typ LSQUARE LITERAL RSQUARE {ArrayType($1, $3)}
 
 /* This is only for the class data members  */
 vdecl:
@@ -150,7 +149,7 @@ expr:
   | expr OR     expr { Binop($1, Or,    $3) }
   | MINUS expr %prec NEG { Unop(Neg, $2) }
   | NOT expr         { Unop(Not, $2) }
-  | expr ASSIGN expr   { Assign($1, $3) }
+  | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
   | ID LSQUARE expr RSQUARE { ArrayAccess($1, $3) }

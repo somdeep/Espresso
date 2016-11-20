@@ -22,8 +22,8 @@ let check_pgm (globals, functions) =
 
   (* Raise an exception if a given binding is to a void type *)
   let check_not_void exceptf = function
-      (Void, n) -> raise (Failure (exceptf n))
-    | _ -> ()
+      Formal (Void, n) -> raise (Failure (exceptf n))
+    | Formal (_,_) -> ()
   in
   
   (* Raise an exception of the given rvalue type cannot be assigned to
@@ -34,9 +34,9 @@ let check_pgm (globals, functions) =
    
   (**** Checking Global Variables ****)
 
-  List.iter (check_not_void (fun n -> "illegal void global " ^ n)) globals;
+ (* List.iter (check_not_void (fun n -> "illegal void global " ^ n)) globals; *)
    
-  report_duplicate (fun n -> "duplicate global " ^ n) (List.map snd globals);
+  (* report_duplicate (fun n -> "duplicate global " ^ n) (List.map snd globals); *)
 
   (**** Checking Functions ****)
 
@@ -48,9 +48,9 @@ let check_pgm (globals, functions) =
 
   (* Function declaration for a named function *)
   let built_in_decls =  StringMap.add "print"
-     { typ = Void; fname = "print"; formals = [(Int, "x")];
+     { typ = Void; fname = "print"; formals = [Formal (Int, "x")];
         body = [] } (StringMap.singleton "printb"
-     { typ = Void; fname = "printb"; formals = [(Bool, "x")];
+     { typ = Void; fname = "printb"; formals = [Formal (Bool, "x")];
        body = [] })
    in
      
@@ -69,8 +69,8 @@ let check_pgm (globals, functions) =
     List.iter (check_not_void (fun n -> "illegal void formal " ^ n ^
       " in " ^ func.fname)) func.formals;
 
-    report_duplicate (fun n -> "duplicate formal " ^ n ^ " in " ^ func.fname)
-      (List.map snd func.formals);
+    (* report_duplicate (fun n -> "duplicate formal " ^ n ^ " in " ^ func.fname)
+      (List.map snd func.formals); *)
 
    (* List.iter (check_not_void (fun n -> "illegal void local " ^ n ^
       " in " ^ func.fname)) func.locals; *)
@@ -80,7 +80,8 @@ let check_pgm (globals, functions) =
 *)
 
     (* Type of each variable (global, formal, or local *)
-    let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
+   
+   (* let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
 	StringMap.empty ( func.formals )
     in
 
@@ -88,12 +89,17 @@ let check_pgm (globals, functions) =
       try StringMap.find s symbols
       with Not_found -> raise (Failure ("undeclared identifier " ^ s)) 
     in
+    *)
+
+    let type_of_identifier s = 
+        Void
+    in
 
     (* Return the type of an expression or throw an exception *)
     let rec expr = function
 	Literal _ -> Int
       | BoolLit _ -> Bool
-      | Id s -> type_of_identifier s
+      | Id s -> Void
       | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
 	(match op with
           Add | Sub | Mult | Div when t1 = Int && t2 = Int -> Int
@@ -116,7 +122,7 @@ let check_pgm (globals, functions) =
         check_assign lt rt (Failure ("illegal assignment " ^ string_of_typ lt ^
 				     " = " ^ string_of_typ rt ^ " in " ^ 
 				     string_of_expr ex))
-      | Call(fname, actuals) as call -> let fd = function_decl fname in
+      (* | Call(fname, actuals) as call -> let fd = function_decl fname in
          if List.length actuals != List.length fd.formals then
            raise (Failure ("expecting " ^ string_of_int
              (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))
@@ -127,6 +133,7 @@ let check_pgm (globals, functions) =
                 " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
              fd.formals actuals;
            fd.typ
+           *)
     in
 
     let check_bool_expr e = if expr e != Bool

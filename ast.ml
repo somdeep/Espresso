@@ -6,11 +6,11 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq | Mo
 type uop = Neg | Not
 
 (* These are the primitive datatypes supported by espresso, along with Object *)
-type typ = Int | Bool | Void | String | Float | ObjTyp | Char
+type typ = Int | Bool | Void | String | Float | ObjTyp of string | Char | Hashmaptype of typ * typ | ArrayType of typ * int | Any
 
-type data_typ = ArrayType of typ * int | DataType of typ | Hashmaptype of typ * typ
+(* type data_typ =  DataType of typ | Any *)
 
-type formal = typ * string
+type formal = Formal of typ * string
 
 type expr =
     Literal of int
@@ -26,7 +26,7 @@ type expr =
   | ArrayAccess of string * expr
   | Noexpr
 
-type var_decl = typ * string
+type var_decl = Vdecl of typ * string
 
 type stmt =
     Block of stmt list
@@ -37,7 +37,7 @@ type stmt =
   | While of expr * stmt
   | Foreach of typ * expr * expr * stmt
   | Break of expr
-  | Local of data_typ * string
+  | Local of typ * string
   
 type func_decl = {
     typ : typ;
@@ -58,7 +58,6 @@ type cdecl = {
   cbody : cbody;
 }
 
-(* type program = bind list * func_decl list *)
 type program = Program of cdecl 
 
 (* Pretty-printing functions *)
@@ -120,11 +119,23 @@ let string_of_typ = function
   | Float -> "float"
 
 
-let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
+let string_of_vdecl (var_decl) = match var_decl with
+    Vdecl (t, id) -> string_of_typ t ^ " " ^ id ^ ";\n"
+
+
+(* Helper function to pretty pring datatypes*)
+let string_of_datatype = function 
+		ArrayType(p, sz)	-> (string_of_typ p) ^ "[" ^ (string_of_int sz) ^ "]"  
+	|  	Any 			-> "Any"
+
+(* Helper function to pretty print formal arguments *)
+let string_of_formal = function
+        Formal(t, name) -> (string_of_typ t) ^ " " ^ name
+    |   _               -> ""
 
 let string_of_func_decl func_decl =
   string_of_typ func_decl.typ ^ " " ^
-  func_decl.fname ^ "(" ^ String.concat ", " (List.map snd func_decl.formals) ^
+  func_decl.fname ^ "(" ^ String.concat ", " (List.map string_of_formal func_decl.formals) ^
   ")\n{\n" ^
  (* String.concat "" (List.map string_of_vdecl func_decl.locals) ^ *)
   String.concat "" (List.map string_of_stmt func_decl.body) ^
