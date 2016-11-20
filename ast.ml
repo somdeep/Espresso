@@ -26,6 +26,8 @@ type expr =
   | ArrayAccess of string * expr
   | Noexpr
 
+type var_decl = typ * string
+
 type stmt =
     Block of stmt list
   | Expr of expr
@@ -36,15 +38,14 @@ type stmt =
   | Foreach of typ * expr * expr * stmt
   | Break of expr
   | Local of data_typ * string
-
+  
 type func_decl = {
-    ret_typ : typ;
+    typ : typ;
     fname : string;
     formals : formal list;
     body : stmt list;
   }
 
-type var_decl = Vdecl of typ * string
 
 type cbody = {
   fields : var_decl list;
@@ -122,13 +123,14 @@ let string_of_typ = function
 let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
 
 let string_of_func_decl func_decl =
-  string_of_typ func_decl.ret_typ ^ " " ^
+  string_of_typ func_decl.typ ^ " " ^
   func_decl.fname ^ "(" ^ String.concat ", " (List.map snd func_decl.formals) ^
   ")\n{\n" ^
  (* String.concat "" (List.map string_of_vdecl func_decl.locals) ^ *)
   String.concat "" (List.map string_of_stmt func_decl.body) ^
   "}\n"
 
-let string_of_program (vars, funcs) =
-  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_func_decl funcs)
+let string_of_program program = match program with
+  Program class_decl ->
+    String.concat "" (List.map string_of_vdecl class_decl.cbody.fields) ^ "\n" ^ 
+    String.concat "\n" (List.map string_of_func_decl class_decl.cbody.methods)

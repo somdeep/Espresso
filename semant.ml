@@ -9,7 +9,7 @@ module StringMap = Map.Make(String)
 
    Check each global variable, then check each function *)
 
-let check (globals, functions) =
+let check_pgm (globals, functions) =
 
   (* Raise an exception if the given list has a duplicate *)
   let report_duplicate exceptf list =
@@ -49,9 +49,9 @@ let check (globals, functions) =
   (* Function declaration for a named function *)
   let built_in_decls =  StringMap.add "print"
      { typ = Void; fname = "print"; formals = [(Int, "x")];
-       locals = []; body = [] } (StringMap.singleton "printb"
+        body = [] } (StringMap.singleton "printb"
      { typ = Void; fname = "printb"; formals = [(Bool, "x")];
-       locals = []; body = [] })
+       body = [] })
    in
      
   let function_decls = List.fold_left (fun m fd -> StringMap.add fd.fname fd m)
@@ -72,20 +72,21 @@ let check (globals, functions) =
     report_duplicate (fun n -> "duplicate formal " ^ n ^ " in " ^ func.fname)
       (List.map snd func.formals);
 
-    List.iter (check_not_void (fun n -> "illegal void local " ^ n ^
-      " in " ^ func.fname)) func.locals;
+   (* List.iter (check_not_void (fun n -> "illegal void local " ^ n ^
+      " in " ^ func.fname)) func.locals; *)
 
-    report_duplicate (fun n -> "duplicate local " ^ n ^ " in " ^ func.fname)
+(*    report_duplicate (fun n -> "duplicate local " ^ n ^ " in " ^ func.fname)
       (List.map snd func.locals);
+*)
 
     (* Type of each variable (global, formal, or local *)
     let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
-	StringMap.empty (globals @ func.formals @ func.locals )
+	StringMap.empty ( func.formals )
     in
 
-    let type_of_identifier s =
+    let type_of_identifier s = 
       try StringMap.find s symbols
-      with Not_found -> raise (Failure ("undeclared identifier " ^ s))
+      with Not_found -> raise (Failure ("undeclared identifier " ^ s)) 
     in
 
     (* Return the type of an expression or throw an exception *)
@@ -156,3 +157,9 @@ let check (globals, functions) =
    
   in
   List.iter check_function functions
+  
+(* Entry point for semantic check - matches a program with a class and extracts its fields and methods *)
+let check program = match program with
+    Program class_decl ->  check_pgm(class_decl.cbody.fields, class_decl.cbody.methods)    
+
+
