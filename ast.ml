@@ -145,5 +145,7 @@ let string_of_func_decl func_decl =
 
 let string_of_program program = match program with
   Program class_decl ->
+    "class " ^ class_decl.cname ^ " {\n" ^
     String.concat "" (List.map string_of_vdecl class_decl.cbody.fields) ^ "\n" ^ 
-    String.concat "\n" (List.map string_of_func_decl class_decl.cbody.methods)
+    String.concat "\n" (List.map string_of_func_decl class_decl.cbody.methods) ^
+    "}\n"

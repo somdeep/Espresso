@@ -5,6 +5,6 @@ class work
 	void main()
 	{
 		a = '1'; 
-        a = 'a';
+        print(1);
 	}
 }

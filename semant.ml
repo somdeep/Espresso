@@ -123,8 +123,8 @@ let check_pgm (globals, functions) =
         check_assign lt rt (Failure ("illegal assignment " ^ string_of_typ lt ^
 				     " = " ^ string_of_typ rt ^ " in " ^ 
 				     string_of_expr ex))
-      (* | Call(fname, actuals) as call -> let fd = function_decl fname in
-         if List.length actuals != List.length fd.formals then
+       | Call(fname, actuals) as call -> let fd = function_decl fname in
+         (* if List.length actuals != List.length fd.formals then
            raise (Failure ("expecting " ^ string_of_int
              (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))
          else
@@ -133,8 +133,9 @@ let check_pgm (globals, functions) =
                 (Failure ("illegal actual argument found " ^ string_of_typ et ^
                 " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
              fd.formals actuals;
+             *)
            fd.typ
-           *)
+           
     in
 
     let check_bool_expr e = if expr e != Bool
