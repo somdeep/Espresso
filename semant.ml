@@ -92,12 +92,13 @@ let check_pgm (globals, functions) =
     *)
 
     let type_of_identifier s = 
-        Void
+        Char
     in
 
     (* Return the type of an expression or throw an exception *)
     let rec expr = function
 	Literal _ -> Int
+    | Charlit _ -> Char
       | BoolLit _ -> Bool
       | Id s -> Void
       | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in

@@ -84,6 +84,7 @@ let string_of_uop = function
 
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
+  | Charlit(l) -> "'" ^ (String.make 1 l) ^ "'"
   | Strlit(s) -> s
   | Floatlit(s) -> string_of_float s
   | BoolLit(true) -> "true"
@@ -117,6 +118,7 @@ let string_of_typ = function
   | Void -> "void"
   | String -> "String"
   | Float -> "float"
+  | Char -> "char"
 
 
 let string_of_vdecl (var_decl) = match var_decl with
