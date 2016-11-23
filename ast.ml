@@ -6,9 +6,10 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq | Mo
 type uop = Neg | Not
 
 (* These are the primitive datatypes supported by espresso, along with Object *)
-type typ = Int | Bool | Void | String | Float | ObjTyp of string | Char | Hashmaptype of typ * typ | ArrayType of typ * int | Any
+type primitive = Int | Bool | Void | String | Float | Char | ObjTyp of string 
+type typ = Datatype of primitive | Hashmaptype of primitive * primitive | ArrayType of primitive * int
 
-(* type data_typ =  DataType of typ | Any *)
+(*type data_typ =  Datatype of typ | Any *)
 
 type formal = Formal of typ * string
 
@@ -112,13 +113,17 @@ let rec string_of_stmt = function
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Break(e) -> "break;\n"
 
-let string_of_typ = function
+let string_of_primitive = function
     Int -> "int"
   | Bool -> "bool"
   | Void -> "void"
   | String -> "String"
   | Float -> "float"
   | Char -> "char"
+
+let string_of_typ = function 
+  Datatype(p) -> string_of_primitive p
+  | _ -> ""
 
 
 let string_of_vdecl (var_decl) = match var_decl with
@@ -127,8 +132,8 @@ let string_of_vdecl (var_decl) = match var_decl with
 
 (* Helper function to pretty pring datatypes*)
 let string_of_datatype = function 
-		ArrayType(p, sz)	-> (string_of_typ p) ^ "[" ^ (string_of_int sz) ^ "]"  
-	|  	Any 			-> "Any"
+		ArrayType(p, sz)	-> (string_of_primitive p) ^ "[" ^ (string_of_int sz) ^ "]"  
+	(*|  	Any 			-> "Any" *)
 
 (* Helper function to pretty print formal arguments *)
 let string_of_formal = function

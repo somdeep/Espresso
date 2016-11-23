@@ -79,7 +79,7 @@ formal:
  	data_typ ID {Formal($1,$2)}
 
 data_typ:
-    typ  { $1 }
+    typ  { Datatype($1) }
   |   array_typ { $1 }
   |   hashmap_typ { $1 }
 typ:

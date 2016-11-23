@@ -25,10 +25,14 @@ let translate_pgm (functions) =
   and i1_t   = L.i1_type   context
   and void_t = L.void_type context in
 
-  let ltype_of_typ = function
+  let ltype_of_primitive = function
       A.Int -> i32_t
     | A.Bool -> i1_t
     | A.Void -> void_t in
+
+  let ltype_of_typ = function
+    A.Datatype (p) -> ltype_of_primitive p in
+
 
   (* Declare each global variable; remember its value in a map *)
   (*let global_vars =
@@ -46,7 +50,7 @@ let translate_pgm (functions) =
   let function_decls =
     let function_decl m fdecl =
       let name = fdecl.A.fname
-      and formal_types = Array.of_list [ ltype_of_typ A.Int ]
+      and formal_types = Array.of_list [ ltype_of_primitive A.Int ]
 	(*Array.of_list (List.map (fun A.Formal (t,_) -> ltype_of_typ t) fdecl.A.formals)*)
       in let ftype = L.function_type (ltype_of_typ fdecl.A.typ) formal_types in
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
@@ -117,7 +121,7 @@ let translate_pgm (functions) =
       | A.Call (f, act) ->
          let (fdef, fdecl) = StringMap.find f function_decls in
 	 let actuals = List.rev (List.map (expr builder) (List.rev act)) in
-	 let result = (match fdecl.A.typ with A.Void -> ""
+	 let result = (match fdecl.A.typ with A.Datatype(Void) -> ""
                                             | _ -> f ^ "_result") in
          L.build_call fdef (Array.of_list actuals) result builder
     in
@@ -135,7 +139,7 @@ let translate_pgm (functions) =
 	A.Block sl -> List.fold_left stmt builder sl
       | A.Expr e -> ignore (expr builder e); builder
       | A.Return e -> ignore (match fdecl.A.typ with
-	  A.Void -> L.build_ret_void builder
+	  A.Datatype(Void) -> L.build_ret_void builder
 	| _ -> L.build_ret (expr builder e) builder); builder
       | A.If (predicate, then_stmt, else_stmt) ->
          let bool_val = expr builder predicate in
@@ -176,7 +180,7 @@ let translate_pgm (functions) =
 
     (* Add a return if the last block falls off the end *)
     add_terminal builder (match fdecl.A.typ with
-        A.Void -> L.build_ret_void
+        A.Datatype(Void) -> L.build_ret_void
       | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
   in
 
