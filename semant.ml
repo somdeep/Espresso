@@ -1,5 +1,5 @@
 open Ast
-(*open Sast *)
+open Sast 
 (*open Helper*)
 
 module StringMap = Map.Make (String)
@@ -21,11 +21,11 @@ let get_fully_qualified_name class_name fdecl =
 let get_reserved_funcs = 
     let reserved_struct name return_type formals = 
 		{
-			fname 			= name;
-			typ 	        = return_type;
-			formals 		= formals;
-			body 			= [];
-			(*ftype		    = Sast.Reserved; *)
+			sfname 			= name;
+			styp 	        = return_type;
+			sformals 		= formals;
+			sbody 			= [];
+			sftype		    = Sast.Reserved;
 		}
 	in
     let reserved_functions = [

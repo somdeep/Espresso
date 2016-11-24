@@ -29,27 +29,27 @@ type sstmt =
   
 type ftype = Reserved | Udf
 type sfunc_decl = {
-    typ : typ;
-    fname : string;
-    formals : formal list;
-    body : sstmt list;
-    ftype : ftype;
+    styp : typ;
+    sfname : string;
+    sformals : formal list;
+    sbody : sstmt list;
+    sftype : ftype;
   }
 
 
 type scbody = {
-  fields : var_decl list;
-  methods : sfunc_decl list;
+  sfields : var_decl list;
+  smethods : sfunc_decl list;
 
 }
 
 type scdecl = {
-  cname : string;
-  cbody : scbody;
+  scname : string;
+  scbody : scbody;
 }
 
 type sprogram =  {
-	class : scdecl list;
+	classes : scdecl list;
 	functions : sfunc_decl list;
 	main : sfunc_decl;
 	reserved : sfunc_decl list;
