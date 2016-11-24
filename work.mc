@@ -7,6 +7,9 @@ class work
 	}
 }
 
-class football
+class work
 {
+	void main()
+	{
+	}
 }

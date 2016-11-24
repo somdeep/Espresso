@@ -29,7 +29,7 @@ let get_reserved_funcs =
 		}
 	in
     let reserved_functions = [
-        reserved_struct "print" (Datatype(Void));
+        reserved_struct "print" (Datatype(Void)) ([]);
     ] in
     reserved_functions
     
@@ -68,18 +68,55 @@ let get_class_maps cdecls =
         )   
     in List.fold_left setup_class_map StringMap.empty cdecls
 (*in*)
+
+
+(* FUNCTION FOR GENERATING SAST  *)
+let get_sast class_maps reserved cdecls =
+	
+	let find_main = (fun f -> match f.fname with "main" -> true | _ -> false) in
+	
+	let get_main func_list = 
+		let mains = (List.find_all find_main func_list) in
+		if List.length mains < 1 then 
+		raise (Failure "Main not Defined") 
+		else if List.length mains > 1 then 
+		raise (Failure "too many mains defined")
+		else List.hd mains 
+	in
+	
+	let handle_cdecl cdecl = 
+		let class_map = StringMap.find cdecl.cname class_maps in
+		let func_list = List.fold_left (fun l f -> f::l) [] cdecl.cbody.methods	in	
+		let scdecl = cdecl in
+		(scdecl, func_list)
+	in
+
+	let iter_cdecls t c = 
+	let scdecl = handle_cdecl c in 
+	(fst scdecl :: fst t, snd scdecl @ snd t)
+	in
+	
+	let scdecl_list, func_list = List.fold_left iter_cdecls ([], []) cdecls in
+	let main = get_main func_list in
+	{
+		classes = [];
+		functions = [];
+		main = List.hd reserved;(*PLEASE CHANGE THIS, PLACEHOLDER*)
+		reserved = reserved;
+	}
+
+
+
 let check pgm = function
     Program(cdecls) ->
         (* generate reserved functions and obtain their map *)
         let reserved_functions = get_reserved_funcs in
         (*let reserved_func_maps = List.fold_left (fun map func -> StringMap.add func.fname) StringMap.empty reserved_functions in*)
-        pgm
        
         (* get class_map for the given class *)
-        (*rlet class_map = get_class_map cdecl in*)
-
-        (*
+        let class_maps = get_class_maps cdecls in
+        
         (* perform semantic checking of all fields and methods. Generate an SAST *)
-        let sast = get_sast class_map reserved cdecl in
+        let sast = get_sast class_maps reserved_functions cdecls in
         sast
-        *)
+        
