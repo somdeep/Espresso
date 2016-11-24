@@ -115,7 +115,7 @@ let translate_pgm (functions) =
           | A.Not     -> L.build_not) e' "tmp" builder
       (*| A.Assign (s, e) -> let e' = expr builder e in
 	                   ignore (L.build_store e' (lookup s) builder); e'*)
-      | A.Call ("print", [e]) | A.Call ("printb", [e]) ->
+      | A.Call ("f", [e]) | A.Call ("printb", [e]) ->
 	  L.build_call printf_func [| int_format_str ; (expr builder e) |]
 	    "printf" builder
       | A.Call (f, act) ->
@@ -187,6 +187,11 @@ let translate_pgm (functions) =
   List.iter build_function_body functions;
   the_module
 
+
+(*
+let translate_class cdecl = 
+    ignore(translate_pgm(cdecl.cbody.methods)) *)
+
 (* entry point for codegen *)
 let translate program = match program with
-    A.Program class_decl ->  translate_pgm(class_decl.cbody.methods)    
+    A.Program (class_decls) ->  List.map (fun cdecl -> translate_pgm cdecl.A.cbody.methods) class_decls    

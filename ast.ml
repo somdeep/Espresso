@@ -59,7 +59,7 @@ type cdecl = {
   cbody : cbody;
 }
 
-type program = Program of cdecl 
+type program = Program of cdecl list 
 
 (* Pretty-printing functions *)
 
@@ -148,9 +148,13 @@ let string_of_func_decl func_decl =
   String.concat "" (List.map string_of_stmt func_decl.body) ^
   "}\n"
 
-let string_of_program program = match program with
-  Program class_decl ->
+let string_of_class class_decl = 
     "class " ^ class_decl.cname ^ " {\n" ^
     String.concat "" (List.map string_of_vdecl class_decl.cbody.fields) ^ "\n" ^ 
     String.concat "\n" (List.map string_of_func_decl class_decl.cbody.methods) ^
     "}\n"
+
+
+let string_of_program program = match program with
+  Program cdecls ->
+    String.concat "" (List.map (string_of_class) cdecls)

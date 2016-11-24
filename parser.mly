@@ -33,7 +33,14 @@ open Ast
 %%
 
 program:
-  cdecl EOF { Program($1) }
+  cdecls EOF { Program($1) }
+
+cdecls:
+cdecl_list       { List.rev $1 }
+
+cdecl_list:
+    cdecl       { [$1] }
+|   cdecl_list cdecl    { $2::$1 }
 
 cdecl:
    CLASS ID LBRACE cbody RBRACE
