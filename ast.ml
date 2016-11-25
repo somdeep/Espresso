@@ -83,6 +83,35 @@ let string_of_uop = function
     Neg -> "-"
   | Not -> "!"
 
+let string_of_primitive = function
+    Int -> "int"
+  | Bool -> "bool"
+  | Void -> "void"
+  | String -> "String"
+  | Float -> "float"
+  | Char -> "char"
+
+let string_of_typ = function
+  Datatype(p) -> string_of_primitive p
+  | _ -> ""
+
+
+let string_of_vdecl (var_decl) = match var_decl with
+    Vdecl (t, id) -> string_of_typ t ^ " " ^ id ^ ";\n"
+
+
+(* Helper function to pretty print datatypes*)
+let string_of_datatype = function
+                ArrayType(p, sz)        -> (string_of_primitive p) ^ "[" ^ (string_of_int sz) ^ "]"
+        (*|     Any                     -> "Any" *)
+
+(* Helper function to pretty print formal arguments *)
+let string_of_formal = function
+        Formal(t, name) -> (string_of_typ t) ^ " " ^ name
+    |   _               -> ""
+
+
+
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
   | Charlit(l) -> "'" ^ (String.make 1 l) ^ "'"
@@ -112,33 +141,9 @@ let rec string_of_stmt = function
       string_of_expr e3  ^ ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Break(e) -> "break;\n"
-
-let string_of_primitive = function
-    Int -> "int"
-  | Bool -> "bool"
-  | Void -> "void"
-  | String -> "String"
-  | Float -> "float"
-  | Char -> "char"
-
-let string_of_typ = function 
-  Datatype(p) -> string_of_primitive p
-  | _ -> ""
+  | Local(t,s) -> string_of_typ t ^  s ^ ";\n"
 
 
-let string_of_vdecl (var_decl) = match var_decl with
-    Vdecl (t, id) -> string_of_typ t ^ " " ^ id ^ ";\n"
-
-
-(* Helper function to pretty pring datatypes*)
-let string_of_datatype = function 
-		ArrayType(p, sz)	-> (string_of_primitive p) ^ "[" ^ (string_of_int sz) ^ "]"  
-	(*|  	Any 			-> "Any" *)
-
-(* Helper function to pretty print formal arguments *)
-let string_of_formal = function
-        Formal(t, name) -> (string_of_typ t) ^ " " ^ name
-    |   _               -> ""
 
 let string_of_func_decl func_decl =
   string_of_typ func_decl.typ ^ " " ^
