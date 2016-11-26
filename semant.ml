@@ -73,14 +73,15 @@ let get_class_maps cdecls =
 (* FUNCTION FOR GENERATING SAST  *)
 let get_sast class_maps reserved cdecls =
 	
+	
 	let find_main = (fun f -> match f.fname with "main" -> true | _ -> false) in
 	
 	let get_main func_list = 
 		let mains = (List.find_all find_main func_list) in
 		if List.length mains < 1 then 
-		raise (Failure "Main not Defined") 
+		raise (Failure ("Main not Defined")) 
 		else if List.length mains > 1 then 
-		raise (Failure "too many mains defined")
+		raise (Failure ("too many mains defined"))
 		else List.hd mains 
 	in
 	
@@ -106,17 +107,27 @@ let get_sast class_maps reserved cdecls =
 	}
 
 
+let fail msg = (* raise (Failure msg) *)
+                    print_string "Error : ";
+                    print_string msg;
+                    print_string "\n";
+                    exit 0
 
-let check pgm = function
-    Program(cdecls) ->
-        (* generate reserved functions and obtain their map *)
+
+let check pgm = match pgm with(*function*)
+	Program(cdecls) ->
+
+	
+	(* generate reserved functions and obtain their map *)
         let reserved_functions = get_reserved_funcs in
         (*let reserved_func_maps = List.fold_left (fun map func -> StringMap.add func.fname) StringMap.empty reserved_functions in*)
        
         (* get class_map for the given class *)
-        let class_maps = get_class_maps cdecls in
+      	let class_maps = get_class_maps cdecls in
         
         (* perform semantic checking of all fields and methods. Generate an SAST *)
-        let sast = get_sast class_maps reserved_functions cdecls in
+   	let sast = get_sast class_maps reserved_functions cdecls in
+
+	
         sast
-        
+
