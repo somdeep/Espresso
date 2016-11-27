@@ -11,6 +11,21 @@ type classMap = {
 	cdecl 			        : Ast.cdecl;
 }
 
+
+type env = {
+	env_class_maps: classMap StringMap.t;
+	env_name      : string;
+	env_locals    : typ StringMap.t;
+	env_parameters: Ast.formal StringMap.t;
+	env_return_type: typ;
+	env_in_for    : bool;
+	env_in_while  : bool;
+    env_in_foreach: bool;
+	env_reserved  : sfunc_decl list;
+}
+
+
+(* get complete function name prepended with the class *)
 let get_fully_qualified_name class_name fdecl = 
     let func_name = fdecl.fname in
         match func_name with
@@ -69,12 +84,115 @@ let get_class_maps cdecls =
     in List.fold_left setup_class_map StringMap.empty cdecls
 (*in*)
 
+let get_scdecl_from_cdecl sfdecls (cdecl) = 
+	{
+		scname = cdecl.cname;
+        scbody = {sfields = cdecl.cbody.fields; smethods = sfdecls; }
+	}
+
+
+
+let rec get_sexpr_from_expr env expr = match expr with 
+        Literal i -> SLiteral(i), env
+    |   Strlit s -> SStrlit(s), env
+    |   Floatlit f -> SFloatlit(f), env
+    |   BoolLit b -> SBoolLit(b), env
+    |   Charlit c -> SCharlit(c), env
+    
+(* Update this function whenever SAST's sexpr is updated *)
+and get_type_from_sexpr sexpr = match sexpr with 
+        SLiteral(_) -> Ast.Datatype(Int)
+    |   SStrlit(_) -> Ast.Datatype(String)
+    |   SFloatlit(_) -> Ast.Datatype(Float)
+    |   SBoolLit(_) -> Ast.Datatype(Bool)
+    |   SCharlit(_) -> Ast.Datatype(Char)
+    |   SId(_, t) -> t
+    |   SBinop(_,_,_,t) -> t
+    |   SUnop(_,_,t) -> t
+    |   SAssign(_,_,t) -> t
+    |   SCall(_,_,t) -> t
+    |   SArrayAccess(_,_,t) -> t
+    |   SNoexpr -> Ast.Datatype(Void)
+
+(* semantically verify a return statement *)
+and check_return env expr = 
+    let sexpr, _ = get_sexpr_from_expr env expr in
+    let type_sexpr = get_type_from_sexpr sexpr in
+    if type_sexpr = env.env_return_type
+        then SReturn(sexpr, type_sexpr), env
+    else
+        raise (Failure ("Expected type " ^ Ast.string_of_typ (env.env_return_type) ^ " but got " ^ Ast.string_of_typ (type_sexpr)))
+
+(* Parse a single statement by matching with different forms that a statement
+    can take, and generate appropriate SAST node *)
+and parse_stmt env stmt = match stmt with 
+    Ast.Return expr -> check_return env expr
+
+
+(* Process the list of statements and return a list of sstmt nodes *)
+and convert_stmt_list_to_sstmt_list env stmt_list = 
+	let env_reference = ref(env) in
+	let rec get_sstmt = function
+	  hd::tl ->
+		let sstmt, env = parse_stmt !env_reference hd in
+		env_reference := env;
+		sstmt::(get_sstmt tl)
+	| [] -> []
+	in 
+	let sstmts = (get_sstmt stmt_list), !env_reference in
+	sstmts
+
+
+
+
+
+
+let is_return_present func_name func_body func_return_type = 
+    if ((List.length func_body) = 0) then () else
+    let last_stmt = List.hd (List.rev func_body) in match last_stmt, func_return_type with
+            SReturn(_,_), _ -> ()  (* There is a return statement *)
+        |   _, Datatype(Void) -> () (* return type is explicitly defined as void *)
+        |   _ -> raise(Failure "non-void function does not have a return statement\n")
+
+
+(* Function that converts func_decl into sfunc_decl *)
+let convert_fdecl_to_sfdecl class_maps reserved class_map cname fdecl = 
+    let get_params_map m formal_node = match formal_node with 
+			Formal(data_type, formal_name) -> (StringMap.add formal_name formal_node m) 
+		| 	_ -> m
+	in
+	let env_params = List.fold_left get_params_map StringMap.empty fdecl.formals in
+    let env = {
+		env_class_maps 	= class_maps;
+		env_name     	= cname;
+		env_locals    	= StringMap.empty;
+		env_parameters	= env_params;
+		env_return_type	= fdecl.typ;
+		env_in_for 		= false;
+		env_in_while 	= false;
+        env_in_foreach = false;
+		env_reserved 	= reserved;
+	} in
+    (* the function's body is a list of statements. Semanticallu check each statement
+       and generate the Sast node *)
+    let fbody = fst (convert_stmt_list_to_sstmt_list env fdecl.body) in
+    let fname = (get_fully_qualified_name cname fdecl) in
+	ignore(is_return_present fname fbody fdecl.typ);
+    {
+		sfname 	    = (get_fully_qualified_name cname fdecl);
+		styp 	    = fdecl.typ;
+		sformals    = fdecl.formals;
+		sbody 		= fbody;
+		sftype		= Sast.Udf;
+	}
+
+	
 
 (* FUNCTION FOR GENERATING SAST  *)
 let get_sast class_maps reserved cdecls =
 	
-	
-	let find_main = (fun f -> match f.fname with "main" -> true | _ -> false) in
+	(* look through SAST functions *)
+	let find_main = (fun f -> match f.sfname with "main" -> true | _ -> false) in
 	
 	let get_main func_list = 
 		let mains = (List.find_all find_main func_list) in
@@ -87,9 +205,10 @@ let get_sast class_maps reserved cdecls =
 	
 	let handle_cdecl cdecl = 
 		let class_map = StringMap.find cdecl.cname class_maps in
-		let func_list = List.fold_left (fun l f -> f::l) [] cdecl.cbody.methods	in	
-		let scdecl = cdecl in
-		(scdecl, func_list)
+		 (* apply convert_fdecl_to_sfdecl on each method from the class and accumulate the corresponding sfdecls in the list *)
+        let sfunc_list = List.fold_left (fun ls f -> (convert_fdecl_to_sfdecl class_maps reserved class_map cdecl.cname f) :: ls) [] cdecl.cbody.methods in
+		let scdecl = get_scdecl_from_cdecl sfunc_list cdecl in
+		(scdecl, sfunc_list)
 	in
 
 	let iter_cdecls t c = 
@@ -97,21 +216,18 @@ let get_sast class_maps reserved cdecls =
 	(fst scdecl :: fst t, snd scdecl @ snd t)
 	in
 	
-	let scdecl_list, func_list = List.fold_left iter_cdecls ([], []) cdecls in
-	let main = get_main func_list in
+   
+	let scdecl_list, sfunctions_list = List.fold_left iter_cdecls ([], []) cdecls in
+	let main = get_main sfunctions_list in
 	{
 		classes = [];
-		functions = [];
+		functions = sfunctions_list; (* Should we remove main from this ? *)
 		main = List.hd reserved;(*PLEASE CHANGE THIS, PLACEHOLDER*)
 		reserved = reserved;
 	}
 
 
-let fail msg = (* raise (Failure msg) *)
-                    print_string "Error : ";
-                    print_string msg;
-                    print_string "\n";
-                    exit 0
+
 
 
 let check pgm = match pgm with(*function*)
