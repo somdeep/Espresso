@@ -6,20 +6,20 @@ type sexpr =
   | SFloatlit of float
   | SBoolLit of bool
   | SCharlit of char
-  | SId of string
-  | SBinop of sexpr * op * sexpr
-  | SUnop of uop * sexpr
-  | SAssign of string * sexpr
-  | SCall of string * sexpr list
-  | SArrayAccess of string * sexpr
+  | SId of string * typ
+  | SBinop of sexpr * op * sexpr * typ
+  | SUnop of uop * sexpr * typ
+  | SAssign of string * sexpr * typ
+  | SCall of string * sexpr list * typ
+  | SArrayAccess of string * sexpr * typ
   | SNoexpr
 
 (*type var_decl = Vdecl of typ * string*)
 
 type sstmt =
     SBlock of sstmt list
-  | SExpr of sexpr
-  | SReturn of sexpr
+  | SExpr of sexpr * typ
+  | SReturn of sexpr * typ
   | SIf of sexpr * sstmt * sstmt
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
