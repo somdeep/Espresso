@@ -114,6 +114,20 @@ and get_type_from_sexpr sexpr = match sexpr with
     |   SArrayAccess(_,_,t) -> t
     |   SNoexpr -> Ast.Datatype(Void)
 
+(*semantically verify a block*)
+and check_block env blk = match blk with 
+		[] -> SBlock([SExpr(SNoexpr,Datatype(Void))]),env
+	|	_  -> 
+		let blk, _ = convert_stmt_list_to_sstmt_list env blk in
+		SBlock(blk),env
+
+
+(*semantically verify an Expression*)
+and check_expr env expr =
+	let sexpr,env = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in
+	SExpr(sexpr, type_sexpr), env
+
 (* semantically verify a return statement *)
 and check_return env expr = 
     let sexpr, _ = get_sexpr_from_expr env expr in
@@ -123,10 +137,24 @@ and check_return env expr =
     else
         raise (Failure ("Expected type " ^ Ast.string_of_typ (env.env_return_type) ^ " but got " ^ Ast.string_of_typ (type_sexpr)))
 
+(*semantically verify an if statement*)
+and check_if env expr st1 st2 =
+	let sexpr,_ = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in
+	let if_body,_ =	parse_stmt env st1 in
+	let else_body,_ = parse_stmt env st2 in
+	if type_sexpr = Datatype(Bool)
+		then SIf(sexpr,if_body,else_body), env
+		else raise(Failure ("Invalid If expression type, must be Bool")) 
+
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)
 and parse_stmt env stmt = match stmt with 
-    Ast.Return expr -> check_return env expr
+		Ast.Block blk -> check_block env blk
+	|	Ast.Expr expr -> check_expr	env expr
+	|	Ast.Return expr -> check_return env expr
+	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
+		
 
 
 (* Process the list of statements and return a list of sstmt nodes *)
