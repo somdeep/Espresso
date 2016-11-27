@@ -147,11 +147,17 @@ and convert_stmt_list_to_sstmt_list env stmt_list =
 
 
 
-let is_return_present func_name func_body func_return_type = 
-    if ((List.length func_body) = 0) then () else
+let is_return_present func_name func_body func_return_type =
+    let leng = List.length func_body in	 
+    if ((leng) = 0) then 
+	(*if (func_return_type != Datatype(Void)) then (raise (Failure("No Statement"))) else (raise(Failure ("Blah blah")))*)
+	match func_return_type with 
+	  Datatype(Void) -> ()
+	| _ ->	raise(Failure ("Empty function body where return was expected"))
+    else    
     let last_stmt = List.hd (List.rev func_body) in match last_stmt, func_return_type with
-            SReturn(_,_), _ -> ()  (* There is a return statement *)
-        |   _, Datatype(Void) -> () (* return type is explicitly defined as void *)
+            _,Datatype(Void) -> ()		
+	|   SReturn(_,_), _ -> ()  (* There is a return statement *)
         |   _ -> raise(Failure "non-void function does not have a return statement\n")
 
 
