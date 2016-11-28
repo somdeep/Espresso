@@ -32,6 +32,10 @@ let get_fully_qualified_name class_name fdecl =
             "main" -> "main"
             |   _ -> class_name ^ "." ^ func_name
 
+let string_of_object = function
+		Datatype(ObjTyp(s))	-> s
+	| 	_ -> ""
+
 (* define all built-in functions supported by espresso *)
 let get_reserved_funcs = 
     let reserved_struct name return_type formals = 
@@ -145,7 +149,33 @@ and check_if env expr st1 st2 =
 	let else_body,_ = parse_stmt env st2 in
 	if type_sexpr = Datatype(Bool)
 		then SIf(sexpr,if_body,else_body), env
-		else raise(Failure ("Invalid If expression type, must be Bool")) 
+		else raise(Failure ("Invalid If expression type, must be Bool"))
+
+ (*semantically verify local declaration*)
+ and check_local env dt name =
+ 	if StringMap.mem name env.env_locals
+	 	then raise (Failure ("Duplicate local declaration"))
+	else
+		let new_env = {
+			env_class_maps = env.env_class_maps;
+			env_name = env.env_name;
+			env_locals = StringMap.add name dt env.env_locals;
+			env_parameters = env.env_parameters;
+			env_return_type = env.env_return_type;
+			env_in_for = env.env_in_for;
+			env_in_while = env.env_in_while;
+			env_in_foreach = env.env_in_foreach;
+			env_reserved = env.env_reserved;
+		}in
+		(match dt with
+			Datatype(ObjTyp(s)) -> 
+				(if not (StringMap.mem (string_of_object dt) env.env_class_maps)
+					then raise((Failure ("Class type not defined")))
+				 else
+					SLocal(dt,name),new_env)
+		|	_ -> SLocal(dt,name),new_env)
+
+
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)
@@ -154,6 +184,7 @@ and parse_stmt env stmt = match stmt with
 	|	Ast.Expr expr -> check_expr	env expr
 	|	Ast.Return expr -> check_return env expr
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
+	| 	Ast.Local(dt, name) -> check_local env dt name
 		
 
 
