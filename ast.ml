@@ -84,12 +84,13 @@ let string_of_uop = function
   | Not -> "!"
 
 let string_of_primitive = function
-    Int -> "int"
-  | Bool -> "bool"
-  | Void -> "void"
-  | String -> "String"
-  | Float -> "float"
-  | Char -> "char"
+    Int -> "int" ^ " "
+  | Bool -> "bool" ^ " "
+  | Void -> "void" ^ " "
+  | String -> "String" ^ " "
+  | Float -> "float" ^ " "
+  | Char -> "char" ^ " "
+  | ObjTyp(s) -> "class " ^ s ^ " " 
 
 let string_of_typ = function
   Datatype(p) -> string_of_primitive p
