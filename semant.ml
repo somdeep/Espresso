@@ -25,6 +25,35 @@ type env = {
 	env_reserved  : sfunc_decl list;
 }
 
+let update_env_name env env_name = 
+{
+	env_class_maps = env.env_class_maps;
+	env_class_map = env.env_class_map;
+	env_name       = env_name;
+	env_locals     = env.env_locals;
+	env_parameters = env.env_parameters;
+	env_return_type = env.env_return_type;
+	env_in_for     = env.env_in_for;
+	env_in_while   = env.env_in_while;
+	env_in_foreach = env.env_in_foreach;
+	env_reserved   = env.env_reserved;
+}
+
+let update_call_stack env in_for in_while = 
+{
+	env_class_maps = env.env_class_maps;
+	env_class_map = env.env_class_map;
+	env_name       = env.env_name;
+	env_locals     = env.env_locals;
+	env_parameters = env.env_parameters;
+	env_return_type = env.env_return_type;
+	env_in_for     = in_for;
+	env_in_while   = in_while;
+	env_in_foreach = env.env_in_foreach;
+	env_reserved   = env.env_reserved;
+}
+
+
 
 (* get complete function name prepended with the class *)
 let get_fully_qualified_name class_name fdecl = 
@@ -182,6 +211,23 @@ and check_if env expr st1 st2 =
 					SLocal(dt,name),new_env)
 		|	_ -> SLocal(dt,name),new_env)
 
+(*semantically verify a while statement*)
+and check_while env expr st = 
+	let old_val = env.env_in_while in
+	let env = update_call_stack env env.env_in_for true in
+
+	let sexpr,_ = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in
+	let sstmt, _ = parse_stmt env st in 
+	let swhile = 
+		if(type_sexpr = Datatype(Bool) || type_sexpr = Datatype(Void))
+			then SWhile(sexpr,sstmt)
+			else raise	(Failure ("Invalid while condition statement"))
+	in
+	let env = update_call_stack env env.env_in_for old_val in
+	swhile,env
+
+
 (* check types in assignments *)
 and check_assignment env id expr = 
 	let type_id = get_id_data_type env id in
@@ -258,6 +304,7 @@ and parse_stmt env stmt = match stmt with
 	|	Ast.Expr expr -> check_expr	env expr
 	|	Ast.Return expr -> check_return env expr
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
+	|	Ast.While(expr,st) -> check_while env expr st 	
 	| 	Ast.Local(dt, name) -> check_local env dt name
 
 		
