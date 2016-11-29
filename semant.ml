@@ -104,7 +104,8 @@ let rec get_sexpr_from_expr env expr = match expr with
     |   BoolLit b -> SBoolLit(b), env
     |   Charlit c -> SCharlit(c), env
 	|	Id id -> SId(id, (get_id_data_type env id)), env
-	| 	Assign(id, expr) -> check_assignment env id expr 
+	| 	Assign(id, expr) -> check_assignment env id expr, env
+	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
 
 	
 (* Update this function whenever SAST's sexpr is updated *)
@@ -187,11 +188,50 @@ and check_assignment env id expr =
 	let type_sexpr = get_type_from_sexpr sexpr in
 	match (type_id, type_sexpr) with
 		Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> if t1 = t2 
-									then SAssign(id, sexpr, type_id) , env
+									then SAssign(id, sexpr, type_id) 
 									else raise (Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id)))
 	|	_,_ -> if type_id = type_sexpr
-					then SAssign(id, sexpr, type_id), env
+					then SAssign(id, sexpr, type_id)
 					else raise(Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
+
+(* semantically validate arithemtic operations *)
+and check_arithmetic_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) with
+(* Assuming that the lhs and rhs must have the same type *)
+		(Datatype(Int), Datatype(Int)) -> SBinop(sexpr1, op, sexpr2, Datatype(Int))
+	|	(Datatype(Float), Datatype(Float)) -> SBinop(sexpr1, op, sexpr2, Datatype(Float))	
+	|	(Datatype(Char), Datatype(Char)) -> SBinop(sexpr1, op, sexpr2, Datatype(Char))
+	|	_,_ -> raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for arithmetic operations "))
+
+and check_relational_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) with
+(* Assuming that the lhs and rhs must have the same type *)
+		(Datatype(Int), Datatype(Int)) -> SBinop(sexpr1, op, sexpr2, Datatype(Bool))
+	|	(Datatype(Float), Datatype(Float)) -> SBinop(sexpr1, op, sexpr2, Datatype(Bool))	
+	|	(Datatype(Char), Datatype(Char)) -> SBinop(sexpr1, op, sexpr2, Datatype(Bool))
+	|	_,_ -> raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for comparison operations "))
+
+(* Assuming that the types on either side are equal - no implicit type casting/ type promotions *)
+and check_equality_ops sexpr1 sexpr2 op type1 type2 = 
+	if type1 = type2 
+		then SBinop(sexpr1, op, sexpr2, Datatype(Bool))
+		else raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for equality operations "))
+
+(* supports only boolean types *)
+and check_logical_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) with
+		(Datatype(Bool), Datatype(Bool)) -> SBinop(sexpr1, op, sexpr2, Datatype(Bool))
+	|	_,_ -> raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for logical operations. Only boolean types are supported. "))
+
+(* check binary Arithmetic, relational & logical operations on expressions *)
+and check_binop env expr1 op expr2 =
+	let sexpr1, _ = get_sexpr_from_expr env expr1 in 
+	let sexpr2, _ = get_sexpr_from_expr env expr2 in 
+	let type1 = get_type_from_sexpr sexpr1 in
+	let type2 = get_type_from_sexpr sexpr2 in 
+	match op with
+		Add | Sub | Mult | Div | Mod | Pow -> check_arithmetic_ops sexpr1 sexpr2 op type1 type2
+	|	Less | Leq | Greater | Geq -> check_relational_ops sexpr1 sexpr2 op type1 type2
+	|	Equal | Neq -> check_equality_ops sexpr1 sexpr2 op type1 type2
+	|	And | Or -> check_logical_ops sexpr1 sexpr2 op type1 type2
+	|	_ -> raise (Failure("unknown binary operator "))
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)
@@ -201,6 +241,7 @@ and parse_stmt env stmt = match stmt with
 	|	Ast.Return expr -> check_return env expr
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
 	| 	Ast.Local(dt, name) -> check_local env dt name
+
 		
 
 
