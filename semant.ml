@@ -106,6 +106,7 @@ let rec get_sexpr_from_expr env expr = match expr with
 	|	Id id -> SId(id, (get_id_data_type env id)), env
 	| 	Assign(id, expr) -> check_assignment env id expr, env
 	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
+	|	Unop(op, expr) -> check_unop env op expr, env
 
 	
 (* Update this function whenever SAST's sexpr is updated *)
@@ -232,6 +233,23 @@ and check_binop env expr1 op expr2 =
 	|	Equal | Neq -> check_equality_ops sexpr1 sexpr2 op type1 type2
 	|	And | Or -> check_logical_ops sexpr1 sexpr2 op type1 type2
 	|	_ -> raise (Failure("unknown binary operator "))
+
+and check_unop env op expr = 
+	let get_numeric_sunop oper sexpr typ_exp = match oper with
+			Sub -> SUnop(oper, sexpr, typ_exp)
+		|	_ -> raise (Failure (" illegal unary operator for numeric type " ^ (string_of_datatype typ_exp)))
+	in
+	let get_bool_sunop oper sexpr typ_expr = match oper with
+			Not -> SUnop(oper, sexpr, typ_expr)
+		|	_ -> raise (Failure (" illegal unary operator for boolean type "))
+	in
+	let sexpr, _ = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in
+	match type_sexpr with 
+		Datatype(Int) | Datatype(Float) -> get_numeric_sunop op sexpr type_sexpr
+	|	Datatype(Bool) -> get_bool_sunop op sexpr type_sexpr
+	|	_ -> raise(Failure("unary oparator can only be applied to Int, Float or Bool types "))
+
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)

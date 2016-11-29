@@ -1,9 +1,9 @@
 (* Abstract Syntax Tree and functions for printing it *)
 
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq | Mod | Pow |
-          And | Or
+          And | Or | Not
 
-type uop = Neg | Not
+type uop = Sub | Not
 
 (* These are the primitive datatypes supported by espresso, along with Object *)
 type primitive = Int | Bool | Void | String | Float | Char | ObjTyp of string 
@@ -80,7 +80,7 @@ let string_of_op = function
   | Or -> "||"
 
 let string_of_uop = function
-    Neg -> "-"
+    Sub -> "-"
   | Not -> "!"
 
 let string_of_primitive = function

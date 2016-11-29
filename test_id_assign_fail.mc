@@ -3,7 +3,13 @@ class test {
 	int main(char param) {
 		float local;
 	//	undef = 123;
-		field = 0.0;
+		field2 = 0;
 		return 1;
 	}
+}
+
+class sample {
+
+      int field2;
+
 }
