@@ -14,6 +14,7 @@ type classMap = {
 
 type env = {
 	env_class_maps: classMap StringMap.t;
+	env_class_map : classMap;
 	env_name      : string;
 	env_locals    : typ StringMap.t;
 	env_parameters: Ast.formal StringMap.t;
@@ -102,7 +103,10 @@ let rec get_sexpr_from_expr env expr = match expr with
     |   Floatlit f -> SFloatlit(f), env
     |   BoolLit b -> SBoolLit(b), env
     |   Charlit c -> SCharlit(c), env
-    
+	|	Id id -> SId(id, (get_id_data_type env id)), env
+	| 	Assign(id, expr) -> check_assignment env id expr 
+
+	
 (* Update this function whenever SAST's sexpr is updated *)
 and get_type_from_sexpr sexpr = match sexpr with 
         SLiteral(_) -> Ast.Datatype(Int)
@@ -158,6 +162,7 @@ and check_if env expr st1 st2 =
 	else
 		let new_env = {
 			env_class_maps = env.env_class_maps;
+			env_class_map = env.env_class_map;
 			env_name = env.env_name;
 			env_locals = StringMap.add name dt env.env_locals;
 			env_parameters = env.env_parameters;
@@ -176,6 +181,32 @@ and check_if env expr st1 st2 =
 		|	_ -> SLocal(dt,name),new_env)
 
 
+and check_assignment env id expr = 
+	let type_id = get_id_data_type env id in
+	let sid = SId(id, type_id) in
+	let sexpr,_ = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in
+	match (type_id, type_sexpr) with
+		Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> if t1 = t2 
+									then SAssign(id, sexpr, type_id) , env
+									else raise (Failure ("type mismatch error for objects "))
+	|	_,_ -> if type_id = type_sexpr
+					then SAssign(id, sexpr, type_id), env
+					else raise(Failure ("type mismatch error "))
+(*and check_assignment env id expr2 = 
+	(* check identifier here *)
+	let sexpr2 = get_sexpr_from_expr env expr2 in
+	let type1 = get_id_type sexpr1 in
+	let type2 = get_type_from_sexpr sexpr2 in
+	match (type1, type2) with
+		ObjTyp(t1), ObjTyp(t2) -> if t1 = t2
+									then SAssign(sexpr1, sexpr2, t1), env
+									else raise(Failure("Invalid assignment from type " ^ (string_of_typ t2) ^ " to type " ^ (string_of_typ t1) ))
+	|	ObjTyp(t1), _ -> raise(Failure("Invalid assignment from type " ^ (string_of_typ type2) ^ " to type " ^ (string_of_typ t1) ))
+	| _, ObjTyp(t2) -> raise(Failure("Invalid assignment from type " ^ (string_of_typ t2) ^ " to type " ^ (string_of_typ type1) ))
+	| _,_ -> if type1 = type2 
+				then SAssign(sexpr1, sexpr2, type1), env
+				else raise(Failure("Invalid assignment from type " ^ (string_of_typ type2) ^ " to type " ^ (string_of_typ type1) ))*)
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)
@@ -202,10 +233,21 @@ and convert_stmt_list_to_sstmt_list env stmt_list =
 	sstmts
 
 
+and get_id_data_type env id = 
+	(* search local variables *)
+	try StringMap.find id env.env_locals
+	with | Not_found -> (* search function arguments *)
+	try let param = StringMap.find id env.env_parameters in
+		(function Formal(t, _) -> t) param
+	with | Not_found -> (* search field members *)
+	try let var_decl = StringMap.find id env.env_class_map.field_map in
+		(function Vdecl(t, _) -> t) var_decl
+	with | Not_found -> raise (Failure ("undefined identifier " ^ id))
 
 
 
-
+(* Checks for the presence of a return statement when the signature indicates a 
+	non-void return type *)
 let is_return_present func_name func_body func_return_type =
     let leng = List.length func_body in	 
     if ((leng) = 0) then 
@@ -229,6 +271,7 @@ let convert_fdecl_to_sfdecl class_maps reserved class_map cname fdecl =
 	let env_params = List.fold_left get_params_map StringMap.empty fdecl.formals in
     let env = {
 		env_class_maps 	= class_maps;
+		env_class_map = class_map;
 		env_name     	= cname;
 		env_locals    	= StringMap.empty;
 		env_parameters	= env_params;
