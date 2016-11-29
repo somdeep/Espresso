@@ -136,6 +136,7 @@ let rec get_sexpr_from_expr env expr = match expr with
 	| 	Assign(id, expr) -> check_assignment env id expr, env
 	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
 	|	Unop(op, expr) -> check_unop env op expr, env
+	| 	Noexpr	->	SNoexpr, env
 
 	
 (* Update this function whenever SAST's sexpr is updated *)
@@ -228,6 +229,26 @@ and check_while env expr st =
 	swhile,env
 
 
+(*semantically verify a for statement*)
+(*MUST CONTAIN CONDITIONAL AS BOOLEAN*)
+and check_for env exp1 exp2 exp3 st =
+	let old_val = env.env_in_for in 
+	let env = update_call_stack env true env.env_in_while in
+
+	let sexpr1,_ = get_sexpr_from_expr env exp1 in
+	let sexpr2,_ = get_sexpr_from_expr env exp2 in
+	let sexpr3,_ = get_sexpr_from_expr env exp3 in
+	let for_body,_ = parse_stmt env st in
+	let conditional_type = get_type_from_sexpr sexpr2 in
+	let st_for =
+		if(conditional_type = Datatype(Bool)) 
+			then SFor(sexpr1,sexpr2,sexpr3,for_body)
+		else raise (Failure ("Invalid For statement conditional"))
+	in
+
+	let env = update_call_stack env old_val env.env_in_while in
+	st_for, env
+	
 (* check types in assignments *)
 and check_assignment env id expr = 
 	let type_id = get_id_data_type env id in
@@ -304,7 +325,8 @@ and parse_stmt env stmt = match stmt with
 	|	Ast.Expr expr -> check_expr	env expr
 	|	Ast.Return expr -> check_return env expr
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
-	|	Ast.While(expr,st) -> check_while env expr st 	
+	|	Ast.While(expr,st) -> check_while env expr st
+	|  	Ast.For(exp1,exp2,exp3,st) -> check_for env exp1 exp2 exp3 st
 	| 	Ast.Local(dt, name) -> check_local env dt name
 
 		
