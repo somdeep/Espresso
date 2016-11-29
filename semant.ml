@@ -441,9 +441,9 @@ let get_sast class_maps reserved cdecls =
 	let scdecl_list, sfunctions_list = List.fold_left iter_cdecls ([], []) cdecls in
 	let main = get_main sfunctions_list in
 	{
-		classes = [];
+		classes = scdecl_list;
 		functions = sfunctions_list; (* Should we remove main from this ? *)
-		main = List.hd reserved;(*PLEASE CHANGE THIS, PLACEHOLDER*)
+		main = main;
 		reserved = reserved;
 	}
 
