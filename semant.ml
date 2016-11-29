@@ -145,7 +145,7 @@ and check_return env expr =
     else
         raise (Failure ("Expected type " ^ Ast.string_of_typ (env.env_return_type) ^ " but got " ^ Ast.string_of_typ (type_sexpr)))
 
-(*semantically verify an if statement*)
+(* semantically verify an if statement *)
 and check_if env expr st1 st2 =
 	let sexpr,_ = get_sexpr_from_expr env expr in
 	let type_sexpr = get_type_from_sexpr sexpr in
@@ -155,7 +155,7 @@ and check_if env expr st1 st2 =
 		then SIf(sexpr,if_body,else_body), env
 		else raise(Failure ("Invalid If expression type, must be Bool"))
 
- (*semantically verify local declaration*)
+ (* semantically verify local variable declaration *)
  and check_local env dt name =
  	if StringMap.mem name env.env_locals
 	 	then raise (Failure ("Duplicate local declaration"))
@@ -180,33 +180,18 @@ and check_if env expr st1 st2 =
 					SLocal(dt,name),new_env)
 		|	_ -> SLocal(dt,name),new_env)
 
-
+(* check types in assignments *)
 and check_assignment env id expr = 
 	let type_id = get_id_data_type env id in
-	let sid = SId(id, type_id) in
 	let sexpr,_ = get_sexpr_from_expr env expr in
 	let type_sexpr = get_type_from_sexpr sexpr in
 	match (type_id, type_sexpr) with
 		Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> if t1 = t2 
 									then SAssign(id, sexpr, type_id) , env
-									else raise (Failure ("type mismatch error for objects "))
+									else raise (Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id)))
 	|	_,_ -> if type_id = type_sexpr
 					then SAssign(id, sexpr, type_id), env
-					else raise(Failure ("type mismatch error "))
-(*and check_assignment env id expr2 = 
-	(* check identifier here *)
-	let sexpr2 = get_sexpr_from_expr env expr2 in
-	let type1 = get_id_type sexpr1 in
-	let type2 = get_type_from_sexpr sexpr2 in
-	match (type1, type2) with
-		ObjTyp(t1), ObjTyp(t2) -> if t1 = t2
-									then SAssign(sexpr1, sexpr2, t1), env
-									else raise(Failure("Invalid assignment from type " ^ (string_of_typ t2) ^ " to type " ^ (string_of_typ t1) ))
-	|	ObjTyp(t1), _ -> raise(Failure("Invalid assignment from type " ^ (string_of_typ type2) ^ " to type " ^ (string_of_typ t1) ))
-	| _, ObjTyp(t2) -> raise(Failure("Invalid assignment from type " ^ (string_of_typ t2) ^ " to type " ^ (string_of_typ type1) ))
-	| _,_ -> if type1 = type2 
-				then SAssign(sexpr1, sexpr2, type1), env
-				else raise(Failure("Invalid assignment from type " ^ (string_of_typ type2) ^ " to type " ^ (string_of_typ type1) ))*)
+					else raise(Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)

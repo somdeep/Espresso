@@ -104,6 +104,7 @@ let string_of_vdecl (var_decl) = match var_decl with
 (* Helper function to pretty print datatypes*)
 let string_of_datatype = function
                 ArrayType(p, sz)        -> (string_of_primitive p) ^ "[" ^ (string_of_int sz) ^ "]"
+              | Datatype(p) -> string_of_primitive p
         (*|     Any                     -> "Any" *)
 
 (* Helper function to pretty print formal arguments *)
