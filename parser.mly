@@ -122,7 +122,7 @@ stmt:
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-  | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
+  | FOREACH LPAREN data_typ ID COLON ID RPAREN stmt
      { Foreach($3, $4, $6, $8) }
   | BREAK SEMI { Break }
   | data_typ ID  SEMI { Local($1,$2) }

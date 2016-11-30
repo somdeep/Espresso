@@ -24,7 +24,7 @@ type sstmt =
   | SIf of sexpr * sstmt * sstmt
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
-  | SForeach of typ * sexpr * sexpr * sstmt
+  | SForeach of typ * string * string * sstmt
   | SBreak
   | SLocal of typ * string
   

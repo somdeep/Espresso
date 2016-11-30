@@ -39,7 +39,7 @@ let update_env_name env env_name =
 	env_reserved   = env.env_reserved;
 }
 
-let update_call_stack env in_for in_while = 
+let update_call_stack env in_for in_while in_foreach = 
 {
 	env_class_maps = env.env_class_maps;
 	env_class_map = env.env_class_map;
@@ -49,7 +49,7 @@ let update_call_stack env in_for in_while =
 	env_return_type = env.env_return_type;
 	env_in_for     = in_for;
 	env_in_while   = in_while;
-	env_in_foreach = env.env_in_foreach;
+	env_in_foreach = in_foreach;
 	env_reserved   = env.env_reserved;
 }
 
@@ -231,7 +231,7 @@ and check_if env expr st1 st2 =
 (* semantically verify a while statement *)
 and check_while env expr st = 
 	let old_val = env.env_in_while in
-	let env = update_call_stack env env.env_in_for true in
+	let env = update_call_stack env env.env_in_for true env.env_in_foreach in
 
 	let sexpr,_ = get_sexpr_from_expr env expr in
 	let type_sexpr = get_type_from_sexpr sexpr in
@@ -241,7 +241,7 @@ and check_while env expr st =
 			then SWhile(sexpr,sstmt)
 			else raise	(Failure ("Invalid while condition statement"))
 	in
-	let env = update_call_stack env env.env_in_for old_val in
+	let env = update_call_stack env env.env_in_for old_val env.env_in_foreach in
 	swhile,env
 
 
@@ -249,7 +249,7 @@ and check_while env expr st =
 (*MUST CONTAIN CONDITIONAL AS BOOLEAN*)
 and check_for env exp1 exp2 exp3 st =
 	let old_val = env.env_in_for in 
-	let env = update_call_stack env true env.env_in_while in
+	let env = update_call_stack env true env.env_in_while env.env_in_foreach in
 
 	let sexpr1,_ = get_sexpr_from_expr env exp1 in
 	let sexpr2,_ = get_sexpr_from_expr env exp2 in
@@ -262,13 +262,49 @@ and check_for env exp1 exp2 exp3 st =
 		else raise (Failure ("Invalid For statement conditional"))
 	in
 
-	let env = update_call_stack env old_val env.env_in_while in
+	let env = update_call_stack env old_val env.env_in_while env.env_in_foreach in
 	st_for, env
+
+
+(*semantically check a foreach statement*)
+and check_foreach env dt id1 id2 st =
+	let old_val = env.env_in_foreach in
+	let env = update_call_stack env env.env_in_for env.env_in_while true in
+
+	if StringMap.mem id1 env.env_locals
+	 	then raise (Failure ("Duplicate local declaration"))
+	else
+		let foreach_body,_ = parse_stmt env st in
+		let new_env = {
+			env_class_maps = env.env_class_maps;
+			env_class_map = env.env_class_map;
+			env_name = env.env_name;
+			env_locals = StringMap.add id1 dt env.env_locals;
+			env_parameters = env.env_parameters;
+			env_return_type = env.env_return_type;
+			env_in_for = env.env_in_for;
+			env_in_while = env.env_in_while;
+			env_in_foreach = env.env_in_foreach;
+			env_reserved = env.env_reserved;
+		}
+	in
+
+	let st_foreach =	
+			if (dt = Datatype(Int) || dt = Datatype(Char) || dt = Datatype(Bool) || dt = Datatype(Float) || dt = Datatype(String) || dt = Datatype(Void))
+				then SForeach(dt,id1,id2,foreach_body)
+			else raise(Failure ("Foreach only works on primitives currently"))
+	in
+
+	let env = update_call_stack env env.env_in_for env.env_in_while old_val in
+	st_foreach,new_env	
 	
+	
+
+
 
 (*semantically verify a break statement*)
 and check_break env =
-	if env.env_in_for || env.env_in_while then
+	if env.env_in_for || env.env_in_while || env.env_in_foreach then
 		SBreak,env
 	else
 		raise (Failure ("Break cannot be called outside of a loop"))
@@ -421,6 +457,7 @@ and parse_stmt env stmt = match stmt with
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
 	|	Ast.While(expr,st) -> check_while env expr st
 	|  	Ast.For(exp1,exp2,exp3,st) -> check_for env exp1 exp2 exp3 st
+	|	Ast.Foreach(dt,exp1,exp2,st) -> check_foreach env dt exp1 exp2 st 
 	|	Ast.Break -> check_break env
 	| 	Ast.Local(dt, name) -> check_local env dt name
 
