@@ -133,9 +133,10 @@ let rec get_sexpr_from_expr env expr = match expr with
     |   BoolLit b -> SBoolLit(b), env
     |   Charlit c -> SCharlit(c), env
 	|	Id id -> SId(id, (get_id_data_type env id)), env
-	| 	Assign(id, expr) -> check_assignment env id expr, env
+	| 	Assign(expr1, expr2) -> check_assignment env expr1 expr2, env
 	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
 	|	Unop(op, expr) -> check_unop env op expr, env
+	|	ArrayAccess(id, expr) -> check_array_access env id expr, env
 	| 	Noexpr	->	SNoexpr, env
 
 	
@@ -175,7 +176,7 @@ and check_return env expr =
     if type_sexpr = env.env_return_type
         then SReturn(sexpr, type_sexpr), env
     else
-        raise (Failure ("Expected type " ^ Ast.string_of_typ (env.env_return_type) ^ " but got " ^ Ast.string_of_typ (type_sexpr)))
+        raise (Failure ("Expected type " ^ Ast.string_of_datatype (env.env_return_type) ^ " but got " ^ Ast.string_of_datatype (type_sexpr)))
 
 (* semantically verify an if statement *)
 and check_if env expr st1 st2 =
@@ -250,16 +251,17 @@ and check_for env exp1 exp2 exp3 st =
 	st_for, env
 	
 (* check types in assignments *)
-and check_assignment env id expr = 
-	let type_id = get_id_data_type env id in
-	let sexpr,_ = get_sexpr_from_expr env expr in
+and check_assignment env expr1 expr2 = 
+	let sexpr1, _ = get_sexpr_from_expr env expr1 in
+	let sexpr, _ = get_sexpr_from_expr env expr2 in
+	let type_id = get_type_from_sexpr sexpr1 in
 	let type_sexpr = get_type_from_sexpr sexpr in
 	match (type_id, type_sexpr) with
 		Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> if t1 = t2 
-									then SAssign(id, sexpr, type_id) 
+									then SAssign(sexpr1, sexpr, type_id) 
 									else raise (Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id)))
 	|	_,_ -> if type_id = type_sexpr
-					then SAssign(id, sexpr, type_id)
+					then SAssign(sexpr1, sexpr, type_id)
 					else raise(Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
 
 (* semantically validate arithemtic operations *)
@@ -317,6 +319,17 @@ and check_unop env op expr =
 	|	Datatype(Bool) -> get_bool_sunop op sexpr type_sexpr
 	|	_ -> raise(Failure("unary oparator can only be applied to Int, Float or Bool types "))
 
+
+and check_array_access env id expr = 
+	let sexpr, _ = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in match type_sexpr with
+		Datatype(Int) -> (* check if id was declared as an array type *)
+						let type_id = get_id_data_type env id in match type_id with 
+							ArrayType(t, _) -> SArrayAccess(id, sexpr, Datatype(t))
+						|	_ -> raise(Failure(" identifier " ^ id ^ " does not belong to an ArrayType "))
+	|	_ -> raise(Failure(" array index must be an integer "))
+						
+	
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)

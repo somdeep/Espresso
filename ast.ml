@@ -22,7 +22,7 @@ type expr =
   | Id of string
   | Binop of expr * op * expr
   | Unop of uop * expr
-  | Assign of string * expr
+  | Assign of expr * expr
   | Call of string * expr list
   | ArrayAccess of string * expr
   | Noexpr
@@ -92,24 +92,27 @@ let string_of_primitive = function
   | Char -> "char" ^ " "
   | ObjTyp(s) -> "class " ^ s ^ " " 
 
-let string_of_typ = function
-  Datatype(p) -> string_of_primitive p
-  | _ -> ""
-
-
-let string_of_vdecl (var_decl) = match var_decl with
-    Vdecl (t, id) -> string_of_typ t ^ " " ^ id ^ ";\n"
-
 
 (* Helper function to pretty print datatypes*)
 let string_of_datatype = function
                 ArrayType(p, sz)        -> (string_of_primitive p) ^ "[" ^ (string_of_int sz) ^ "]"
               | Datatype(p) -> string_of_primitive p
+    
         (*|     Any                     -> "Any" *)
+
+(*let string_of_typ = function
+  Datatype(p) -> string_of_primitive p
+  | _ -> ""*)
+
+
+let string_of_vdecl (var_decl) = match var_decl with
+    Vdecl (t, id) -> string_of_datatype t ^ " " ^ id ^ ";\n"
+
+
 
 (* Helper function to pretty print formal arguments *)
 let string_of_formal = function
-        Formal(t, name) -> (string_of_typ t) ^ " " ^ name
+        Formal(t, name) -> (string_of_datatype t) ^ " " ^ name
     |   _               -> ""
 
 
@@ -125,7 +128,8 @@ let rec string_of_expr = function
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-  | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | Assign(e1, e2) -> string_of_expr e1 ^ " = " ^ string_of_expr e2
+  | ArrayAccess(v, e) -> v ^ "[" ^ string_of_expr e ^ "]"
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
@@ -143,12 +147,12 @@ let rec string_of_stmt = function
       string_of_expr e3  ^ ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Break(e) -> "break;\n"
-  | Local(t,s) -> string_of_typ t ^  s ^ ";\n"
+  | Local(t,s) -> string_of_datatype t ^  s ^ ";\n"
 
 
 
 let string_of_func_decl func_decl =
-  string_of_typ func_decl.typ ^ " " ^
+  string_of_datatype func_decl.typ ^ " " ^
   func_decl.fname ^ "(" ^ String.concat ", " (List.map string_of_formal func_decl.formals) ^
   ")\n{\n" ^
  (* String.concat "" (List.map string_of_vdecl func_decl.locals) ^ *)
