@@ -12,5 +12,13 @@ class test_return
 	
 	String a()
 	{
+		return "a";
+	}
+}
+
+class test_return
+{
+	void try()
+	{
 	}
 }
