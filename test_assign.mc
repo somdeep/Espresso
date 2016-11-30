@@ -8,8 +8,13 @@ class Test {
   int main(int y) {
      class Work wObj;
      int [10]arr;
+     int x;
+     x = arr[5];
+     hashmap<int,int> map;
      class Work [5]wArr;
-     hashmap<int,int> map;     
+     x = map<x>;
+     map<arr[0]> = x;
+     wArr[6] = wObj;     
      return 0;
    }
 }

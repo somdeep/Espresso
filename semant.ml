@@ -137,6 +137,7 @@ let rec get_sexpr_from_expr env expr = match expr with
 	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
 	|	Unop(op, expr) -> check_unop env op expr, env
 	|	ArrayAccess(id, expr) -> check_array_access env id expr, env
+	|	HashmapAccess(id, expr) -> check_hashmap_access env id expr, env
 	| 	Noexpr	->	SNoexpr, env
 
 	
@@ -153,6 +154,7 @@ and get_type_from_sexpr sexpr = match sexpr with
     |   SAssign(_,_,t) -> t
     |   SCall(_,_,t) -> t
     |   SArrayAccess(_,_,t) -> t
+	|   SHashmapAccess(_,_,t) -> t
     |   SNoexpr -> Ast.Datatype(Void)
 
 (*semantically verify a block*)
@@ -255,8 +257,8 @@ and check_assignment env expr1 expr2 =
 	let sexpr1, _ = get_sexpr_from_expr env expr1 in
 	let sexpr, _ = get_sexpr_from_expr env expr2 in
 	let type_id = get_type_from_sexpr sexpr1 in match sexpr1 with 
-	(* add hashmap type and object type here *)
-		SId(_,_) | SArrayAccess(_,_,_) ->
+	(******* add hashmap type and object type here ******)
+		SId(_,_) | SArrayAccess(_,_,_) | SHashmapAccess(_,_,_) ->
 									(let type_sexpr = get_type_from_sexpr sexpr in match (type_id, type_sexpr) with
 										Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> 
 																	if t1 = t2 
@@ -324,17 +326,30 @@ and check_unop env op expr =
 	|	Datatype(Bool) -> get_bool_sunop op sexpr type_sexpr
 	|	_ -> raise(Failure("unary oparator can only be applied to Int, Float or Bool types "))
 
-
+(* semantic check for array element access. Supporting only 1D arrays now *)
 and check_array_access env id expr = 
 	let sexpr, _ = get_sexpr_from_expr env expr in
 	let type_sexpr = get_type_from_sexpr sexpr in match type_sexpr with
 		Datatype(Int) -> (* check if id was declared as an array type *)
-						let type_id = get_id_data_type env id in match type_id with 
+						(let type_id = get_id_data_type env id in match type_id with 
 							ArrayType(t, _) -> SArrayAccess(id, sexpr, Datatype(t))
 						|	_ -> raise(Failure(" identifier " ^ id ^ " does not belong to an ArrayType "))
+						)
 	|	_ -> raise(Failure(" array index must be an integer "))
-						
-	
+
+(* semantically check for hashmap element access. Supporint only primitive types for hashmaps *)						
+and check_hashmap_access env id expr = 
+	let sexpr, _ = get_sexpr_from_expr env expr in
+	let type_sexpr = get_type_from_sexpr sexpr in 
+	let type_id = get_id_data_type env id in match (type_id, type_sexpr) with
+			(Hashmaptype(t1, t2), Datatype(prim)) -> (if t1 = prim 
+										(* NOTE: we return type t2 and not t1 as t2 -> type of the value *)
+										then SHashmapAccess(id, sexpr, Datatype(t2))
+										else raise(Failure("expected key of type " ^ (string_of_datatype (Datatype(t1))) ^ " but got type " ^ (string_of_datatype type_sexpr)  ))
+									)
+		|	(_, Datatype(prim))  -> raise(Failure("identifier " ^ id ^ " is not a valid hashmap type "))
+		| 	(_, _) -> raise(Failure(" Hashmap currently supports only primitive "))	
+
 
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)

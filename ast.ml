@@ -25,6 +25,7 @@ type expr =
   | Assign of expr * expr
   | Call of string * expr list
   | ArrayAccess of string * expr
+  | HashmapAccess of string * expr
   | Noexpr
 
 type var_decl = Vdecl of typ * string
@@ -97,6 +98,7 @@ let string_of_primitive = function
 let string_of_datatype = function
                 ArrayType(p, sz)        -> (string_of_primitive p) ^ "[" ^ (string_of_int sz) ^ "]"
               | Datatype(p) -> string_of_primitive p
+              | Hashmaptype(p1, p2) -> "hashmap <" ^ string_of_primitive p1 ^ "," ^ string_of_primitive p2 ^ ">"
     
         (*|     Any                     -> "Any" *)
 
@@ -130,6 +132,7 @@ let rec string_of_expr = function
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | Assign(e1, e2) -> string_of_expr e1 ^ " = " ^ string_of_expr e2
   | ArrayAccess(v, e) -> v ^ "[" ^ string_of_expr e ^ "]"
+  | HashmapAccess(v, e) -> v ^ "<" ^ string_of_expr e ^ ">"
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
