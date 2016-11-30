@@ -25,7 +25,7 @@ type sstmt =
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
   | SForeach of typ * sexpr * sexpr * sstmt
-  | SBreak of sexpr
+  | SBreak
   | SLocal of typ * string
   
 type ftype = Reserved | Udf
