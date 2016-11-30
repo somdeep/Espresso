@@ -213,7 +213,7 @@ and check_if env expr st1 st2 =
 					SLocal(dt,name),new_env)
 		|	_ -> SLocal(dt,name),new_env)
 
-(*semantically verify a while statement*)
+(* semantically verify a while statement *)
 and check_while env expr st = 
 	let old_val = env.env_in_while in
 	let env = update_call_stack env env.env_in_for true in
@@ -254,15 +254,20 @@ and check_for env exp1 exp2 exp3 st =
 and check_assignment env expr1 expr2 = 
 	let sexpr1, _ = get_sexpr_from_expr env expr1 in
 	let sexpr, _ = get_sexpr_from_expr env expr2 in
-	let type_id = get_type_from_sexpr sexpr1 in
-	let type_sexpr = get_type_from_sexpr sexpr in
-	match (type_id, type_sexpr) with
-		Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> if t1 = t2 
-									then SAssign(sexpr1, sexpr, type_id) 
-									else raise (Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id)))
-	|	_,_ -> if type_id = type_sexpr
-					then SAssign(sexpr1, sexpr, type_id)
-					else raise(Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
+	let type_id = get_type_from_sexpr sexpr1 in match sexpr1 with 
+	(* add hashmap type and object type here *)
+		SId(_,_) | SArrayAccess(_,_,_) ->
+									(let type_sexpr = get_type_from_sexpr sexpr in match (type_id, type_sexpr) with
+										Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> 
+																	if t1 = t2 
+																		then SAssign(sexpr1, sexpr, type_id) 
+																		else raise (Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id)))
+									|	_,_ -> if type_id = type_sexpr
+												then SAssign(sexpr1, sexpr, type_id)
+												else raise(Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
+									)
+	|	_ -> raise(Failure("lvalue required for assignment "))
+	
 
 (* semantically validate arithemtic operations *)
 and check_arithmetic_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) with
