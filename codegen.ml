@@ -40,7 +40,7 @@ let translate sast =
   in
   let _ = big_func in
 
-  let make_struct_tbl class_dec = 
+  let make_struct_tbl class_dec = (*adds struct type to table*)
     let struct_t = L.named_struct_type context class_dec.scname in
     Hashtbl.add tbl_of_struct_t class_dec.scname struct_t
   in
