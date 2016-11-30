@@ -265,6 +265,14 @@ and check_for env exp1 exp2 exp3 st =
 	let env = update_call_stack env old_val env.env_in_while in
 	st_for, env
 	
+
+(*semantically verify a break statement*)
+and check_break env =
+	if env.env_in_for || env.env_in_while then
+		SBreak,env
+	else
+		raise (Failure ("Break cannot be called outside of a loop"))
+
 (* check types in assignments *)
 and check_assignment env expr1 expr2 = 
 	let sexpr1, _ = get_sexpr_from_expr env expr1 in
@@ -413,6 +421,7 @@ and parse_stmt env stmt = match stmt with
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
 	|	Ast.While(expr,st) -> check_while env expr st
 	|  	Ast.For(exp1,exp2,exp3,st) -> check_for env exp1 exp2 exp3 st
+	|	Ast.Break -> check_break env
 	| 	Ast.Local(dt, name) -> check_local env dt name
 
 		

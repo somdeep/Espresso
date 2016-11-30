@@ -124,7 +124,7 @@ stmt:
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | FOREACH LPAREN data_typ expr COLON expr RPAREN stmt
      { Foreach($3, $4, $6, $8) }
-  | BREAK SEMI { Break Noexpr }
+  | BREAK SEMI { Break }
   | data_typ ID  SEMI { Local($1,$2) }
  /* | data_typ ID ASSIGN expr SEMI { Local($1, $2, $4) } 
 */

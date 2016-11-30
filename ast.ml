@@ -38,7 +38,7 @@ type stmt =
   | For of expr * expr * expr * stmt
   | While of expr * stmt
   | Foreach of typ * expr * expr * stmt
-  | Break of expr
+  | Break
   | Local of typ * string
   
 type func_decl = {
@@ -149,7 +149,7 @@ let rec string_of_stmt = function
       "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
       string_of_expr e3  ^ ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
-  | Break(e) -> "break;\n"
+  | Break -> "break;\n"
   | Local(t,s) -> string_of_datatype t ^  s ^ ";\n"
 
 

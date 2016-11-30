@@ -7,10 +7,19 @@ class test_return
 
 	int main()
 	{
-    		return 1;
+		if(1)
+		{
+			return 2;	
+		}	
+		else
+		{
+			return 3;
+		}
+		return 1;
 	}
 	
 	String a()
 	{
+		return "abc";
 	}
 }
