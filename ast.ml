@@ -1,6 +1,6 @@
 (* Abstract Syntax Tree and functions for printing it *)
 
-type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq | Mod | Pow |
+type op = Add | Sub | Mult | Div | Equal | Neq | Lt | Leq | Gt | Geq | Mod | Pow |
           And | Or | Not
 
 type uop = Sub | Not
@@ -73,9 +73,9 @@ let string_of_op = function
   | Pow -> "**"
   | Equal -> "=="
   | Neq -> "!="
-  | Less -> "<"
+  | Lt -> "<"
   | Leq -> "<="
-  | Greater -> ">"
+  | Gt -> ">"
   | Geq -> ">="
   | And -> "&&"
   | Or -> "||"

@@ -6,8 +6,8 @@ module StringMap = Map.Make (String)
 
 type classMap = {
 	field_map               : Ast.var_decl StringMap.t;
-	func_map               : Ast.func_decl StringMap.t;
-	(*builtFuncMap 	: sfunc_decl StringMap.t;*)
+	func_map               	: Ast.func_decl StringMap.t;
+	reserved_func_map 		: sfunc_decl StringMap.t;
 	cdecl 			        : Ast.cdecl;
 }
 
@@ -82,7 +82,7 @@ let get_reserved_funcs =
     ] in
     reserved_functions
     
-let get_class_maps cdecls = 
+let get_class_maps cdecls reserved_maps = 
     let setup_class_map m cdecl =
         (* get all fields belonging to the class cdecl. Raise error if duplicates are found *)
         let field_maps m = function Vdecl(typ, name) ->
@@ -111,6 +111,7 @@ let get_class_maps cdecls =
             {
                 field_map = List.fold_left field_maps StringMap.empty cdecl.cbody.fields;
                 func_map = List.fold_left func_maps StringMap.empty cdecl.cbody.methods;
+				reserved_func_map = reserved_maps;
                 cdecl = cdecl;
             } 
             m
@@ -138,6 +139,7 @@ let rec get_sexpr_from_expr env expr = match expr with
 	|	Unop(op, expr) -> check_unop env op expr, env
 	|	ArrayAccess(id, expr) -> check_array_access env id expr, env
 	|	HashmapAccess(id, expr) -> check_hashmap_access env id expr, env
+	|	Call(func_name, expr_list) -> check_call env func_name expr_list, env
 	| 	Noexpr	->	SNoexpr, env
 
 	
@@ -156,6 +158,17 @@ and get_type_from_sexpr sexpr = match sexpr with
     |   SArrayAccess(_,_,t) -> t
 	|   SHashmapAccess(_,_,t) -> t
     |   SNoexpr -> Ast.Datatype(Void)
+
+(* get a list of sexprs from a list of exprs *)
+and get_sexprl_from_exprl env el =
+  let env_ref = ref(env) in
+  let rec helper = function
+	  head::tail ->
+		let a_head, env = get_sexpr_from_expr !env_ref head in
+		env_ref := env;
+		a_head::(helper tail)
+	| [] -> []
+  in (helper el), !env_ref
 
 (*semantically verify a block*)
 and check_block env blk = match blk with 
@@ -305,7 +318,7 @@ and check_binop env expr1 op expr2 =
 	let type2 = get_type_from_sexpr sexpr2 in 
 	match op with
 		Add | Sub | Mult | Div | Mod | Pow -> check_arithmetic_ops sexpr1 sexpr2 op type1 type2
-	|	Less | Leq | Greater | Geq -> check_relational_ops sexpr1 sexpr2 op type1 type2
+	|	Lt | Leq | Gt | Geq -> check_relational_ops sexpr1 sexpr2 op type1 type2
 	|	Equal | Neq -> check_equality_ops sexpr1 sexpr2 op type1 type2
 	|	And | Or -> check_logical_ops sexpr1 sexpr2 op type1 type2
 	|	_ -> raise (Failure("unknown binary operator "))
@@ -349,6 +362,46 @@ and check_hashmap_access env id expr =
 									)
 		|	(_, Datatype(prim))  -> raise(Failure("identifier " ^ id ^ " is not a valid hashmap type "))
 		| 	(_, _) -> raise(Failure(" Hashmap currently supports only primitive "))	
+
+(* check function call semantics *)
+(* pass invoking object's environment in env if this is invoked by an object *)
+and check_call env func_name expr_list =
+	(* get class in corresponding env *)
+	let context_class_map = try StringMap.find env.env_name env.env_class_maps with
+		|	Not_found -> raise (Failure ("class was not found in the context of this function call "))
+	in
+	let sexpr_list, _ = get_sexprl_from_exprl env expr_list in
+	(* check a given formal and actual parameter *)
+	let get_actual_param formal_param param = 
+		let formal_type = match formal_param with Formal(t, _) -> t | _ -> Datatype(Void) in
+		let param_type = get_type_from_sexpr param in
+		if formal_type = param_type 
+			then param
+			else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
+	in
+
+	(* check lengths of formal and passed parameters and get actual parameters *)
+	let get_actual_params formal_params params = 
+		let formal_len = List.length formal_params in
+		let param_len = List.length params in
+			if formal_len = param_len
+				then List.map2 get_actual_param formal_params params
+				else raise(Failure(" formal and actual parameters have unequal lengths "))
+	in
+
+	let func_full_name = env.env_name ^ "." ^ func_name in
+	(* look for the function in the list of reserved functions. If it is not found there
+		look at the list of member functions of the context_class *)
+	try let func_handle = StringMap.find func_full_name context_class_map.reserved_func_map in
+		let actuals_list = get_actual_params func_handle.sformals sexpr_list in
+		SCall(func_full_name, actuals_list, func_handle.styp) with
+	|	Not_found ->
+		(* search the list of member functions *)
+		try let func_handle = StringMap.find func_full_name context_class_map.func_map in
+			let actuals_list = get_actual_params func_handle.formals sexpr_list in
+			SCall(func_full_name, actuals_list, func_handle.typ) with
+		|	Not_found -> raise(Failure("function " ^ func_name ^ " was not found "))
+
 
 
 (* Parse a single statement by matching with different forms that a statement
@@ -490,10 +543,10 @@ let check pgm = match pgm with(*function*)
 	
 	(* generate reserved functions and obtain their map *)
         let reserved_functions = get_reserved_funcs in
-        (*let reserved_func_maps = List.fold_left (fun map func -> StringMap.add func.fname) StringMap.empty reserved_functions in*)
+        let reserved_maps = List.fold_left (fun m func -> StringMap.add func.sfname func m) StringMap.empty reserved_functions in
        
         (* get class_map for the given class *)
-      	let class_maps = get_class_maps cdecls in
+      	let class_maps = get_class_maps cdecls reserved_maps in
         
         (* perform semantic checking of all fields and methods. Generate an SAST *)
    	let sast = get_sast class_maps reserved_functions cdecls in
