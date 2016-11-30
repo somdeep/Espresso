@@ -275,6 +275,7 @@ and check_foreach env dt id1 id2 st =
 	 	then raise (Failure ("Duplicate local declaration"))
 	else
 		let foreach_body,_ = parse_stmt env st in
+		let type_id = get_id_data_type env id2 in 
 		let new_env = {
 			env_class_maps = env.env_class_maps;
 			env_class_map = env.env_class_map;
@@ -295,8 +296,18 @@ and check_foreach env dt id1 id2 st =
 			else raise(Failure ("Foreach only works on primitives currently"))
 	in
 
+	let st_foreach_2 = 
+			match type_id,dt with 
+				ArrayType(t,_),Datatype(d) -> 
+					if(t = d)
+						then (st_foreach)
+					else 
+						raise(Failure ("Mismatch in array and iterator type for foreach"))	
+			| _ ->	raise(Failure ("Need array type to walkthrough in foreach"))
+	in
+
 	let env = update_call_stack env env.env_in_for env.env_in_while old_val in
-	st_foreach,new_env	
+	st_foreach_2,new_env	
 	
 	
 

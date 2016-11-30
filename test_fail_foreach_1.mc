@@ -12,7 +12,7 @@ class work2
 	int a;
 	void main2()
 	{
-		int[10] a;
+		char[10] a;
 		int b;
 		hashmap <int,int> hm;
 		foreach( int c : a)
