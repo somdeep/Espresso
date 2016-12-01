@@ -18,6 +18,7 @@ class work2
 		foreach( int c : a)
 		{
 			int abc;
+			c = c + 1;
 			break;
 		}
 	}

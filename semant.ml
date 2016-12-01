@@ -274,8 +274,7 @@ and check_foreach env dt id1 id2 st =
 	if StringMap.mem id1 env.env_locals
 	 	then raise (Failure ("Duplicate local declaration"))
 	else
-		let foreach_body,_ = parse_stmt env st in
-		let type_id = get_id_data_type env id2 in 
+		 
 		let new_env = {
 			env_class_maps = env.env_class_maps;
 			env_class_map = env.env_class_map;
@@ -288,7 +287,10 @@ and check_foreach env dt id1 id2 st =
 			env_in_foreach = env.env_in_foreach;
 			env_reserved = env.env_reserved;
 		}
-	in
+		in
+		
+		let foreach_body,_ = parse_stmt new_env st in
+		let type_id = get_id_data_type new_env id2 in
 
 	let st_foreach =	
 			if (dt = Datatype(Int) || dt = Datatype(Char) || dt = Datatype(Bool) || dt = Datatype(Float) || dt = Datatype(String) || dt = Datatype(Void))
