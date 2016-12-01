@@ -84,12 +84,15 @@ Check() {
     echo "###### Testing $basename" 1>&2
 
     generatedfiles=""
-
-    generatedfiles="$generatedfiles ${basename}.ll ${basename}.out" &&
-    Run "$MICROC" "<" $1 ">" "${basename}.ll" &&
-    Run "$LLI" "${basename}.ll" ">" "${basename}.out" &&
-    Compare ${basename}.out ${reffile}.out ${basename}.diff
-
+    generatedfiles="$generatedfiles ${basename}.ll ${basename}.out ${basename}.before ${basename}.before1 ${basename}.after ${basename}.after1" &&
+    Run "$MICROC" "-a <" $1 ">" "${basename}.ll" &&
+#    Run "$LLI" "${basename}.ll" ">" "${basename}.out" &&
+#    Compare ${basename}.out ${reffile}.out ${basename}.diff
+    tr -d "\n" < ${basename}.ll > ${basename}.after1
+    tr -d " "  < ${basename}.after1 > ${basename}.after
+    tr -d "\n" < $1 > ${basename}.before1
+    tr -d " "  < ${basename}.before1 > ${basename}.before  
+    Compare ${basename}.after ${basename}.after ${basename}.diff
     # Report the status and clean up the generated files
 
     if [ $error -eq 0 ] ; then
@@ -119,7 +122,7 @@ CheckFail() {
     generatedfiles=""
 
     generatedfiles="$generatedfiles ${basename}.err ${basename}.diff" &&
-    RunFail "$MICROC" "<" $1 "2>" "${basename}.err" ">>" $globallog &&
+    RunFail "$MICROC" "-a <" $1 "2>" "${basename}.err" ">>" $globallog &&
     Compare ${basename}.err ${reffile}.err ${basename}.diff
 
     # Report the status and clean up the generated files
@@ -162,18 +165,18 @@ if [ $# -ge 1 ]
 then
     files=$@
 else
-    files="tests/test-*.mc tests/fail-*.mc"
+    files="tests/test_*.mc tests/fail_*.mc"
 fi
 
 for file in $files
 do
     case $file in
-	*test-*)
+	*test_*)
 	    Check $file 2>> $globallog
 	    ;;
-	*fail-*)
-	    CheckFail $file 2>> $globallog
-	    ;;
+#	*fail_*)
+#	    CheckFail $file 2>> $globallog
+#	    ;;
 	*)
 	    echo "unknown file type $file"
 	    globalerror=1
