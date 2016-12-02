@@ -598,7 +598,6 @@ let get_sast class_maps reserved cdecls =
 
 let check pgm = match pgm with(*function*)
 	Program(cdecls) ->
-
 	
 	(* generate reserved functions and obtain their map *)
         let reserved_functions = get_reserved_funcs in
