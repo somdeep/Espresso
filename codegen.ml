@@ -39,6 +39,27 @@ let i64_t = L.i64_type context;;
 let void_t = L.void_type context;;
 
 
+(*Code generation for an expression*)
+let rec sexpr_gen llbuilder = function
+    SLiteral(i) ->  L.const_int i32_t i
+  | SFloatlit(f)  ->  L.const_float f_t f  
+  | _ -> raise (Failure "Not supported in codegen yet")
+
+(*Code generation for a return statement*)
+and return_gen llbuilder exp typ =
+  match exp with 
+    SNoexpr -> L.build_ret_void llbuilder
+  | _ -> L.build_ret (sexpr_gen llbuilder exp) llbuilder
+
+
+(*Codegen for stmt*)
+and stmt_gen llbuilder = function
+  
+  SBlock st ->  List.hd(List.map (stmt_gen llbuilder) st)
+| SReturn(exp,typ) -> return_gen llbuilder exp typ 
+|  _ -> raise (Failure ("unknown statement"))
+  
+
 
 let main_gen main = 
   Hash.clear values;
@@ -46,7 +67,7 @@ let main_gen main =
   let func = L.define_function "main" ftype the_module in 
   let llbuilder = L.builder_at_end context (L.entry_block func) in
   
-  (*let _ = stmt_gen llbuilder (SBlock(main.sbody)) in*)
+  let _ = stmt_gen llbuilder (SBlock(main.sbody)) in
   L.build_ret (L.const_int i32_t 0) llbuilder
 
 let translate sprogram =
