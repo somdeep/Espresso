@@ -25,7 +25,7 @@ module StringMap = Map.Make(String)
 let values:(string, L.llvalue) Hash.t = Hash.create 50
 let params:(string, L.llvalue) Hash.t = Hash.create 50
 let class_types:(string, L.lltype) Hash.t = Hash.create 10
-let struct_field_indexes:(string, int) Hash.t = Hash.create 50
+let class_field_indexes:(string, int) Hash.t = Hash.create 50
 
 
 let context = L.global_context ()
@@ -60,7 +60,7 @@ and get_llvm_type (dt : A.typ) = match dt with
 (*Find out if a class/struct in llvm name exists, during object declaration*)
 and find_class name = 
   try Hash.find class_types name
-  with | Not_found  ->  raise(Failure ("Invalid class struct name")) 
+  with | Not_found  ->  raise(Failure ("Invalid class name")) 
 
 (*Code generation for an expression*)
 and sexpr_gen llbuilder = function
@@ -82,7 +82,7 @@ and return_gen llbuilder exp typ =
 (*Code generation for local declaration*)
 and local_gen llbuilder dt st  =
   let t = match dt with
-          A.Datatype(A.ObjTyp(name)) -> raise (Failure ("Objtyp not yet supported in codegen"))
+          A.Datatype(A.ObjTyp(name)) -> find_class name
         | _ -> get_llvm_type dt
   in
 
@@ -99,6 +99,13 @@ and stmt_gen llbuilder = function
 |  _ -> raise (Failure ("unknown statement"))
   
 
+let class_stub_gen s =
+  let class_type = L.named_struct_type context s.scname in
+  Hash.add class_types s.scname class_type
+
+(*let class_gen s =*)
+    
+
 (*Code generation for the main function of program*)
 let main_gen main = 
   Hash.clear values;
@@ -114,6 +121,8 @@ let translate sprogram =
 
   (*(raise (Failure("In codegen")))*)
 
-  let _ = main_gen sprogram.main in
+  let _ = List.map (fun s -> class_stub_gen s) sprogram.classes in
+  (*let _ = List.map(fun s -> class_gen s) sprogram.classes in*)
+  let _ = main_gen sprogram.main in 
 
   the_module
