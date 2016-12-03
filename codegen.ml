@@ -47,7 +47,7 @@ let rec string_gen llbuilder s =
   L.build_global_stringptr s "tmp" llbuilder
 
 
-(*return corresponding llvm types for Ast datatype*)
+(*return corresponding llvm types for Ast datatype - get_type*)
 and get_llvm_type (dt : A.typ) = match dt with
   A.Datatype(Int) -> i32_t
 | A.Datatype(Float) -> f_t
@@ -61,6 +61,7 @@ and get_llvm_type (dt : A.typ) = match dt with
 and find_class name = 
   try Hash.find class_types name
   with | Not_found  ->  raise(Failure ("Invalid class name")) 
+
 
 (*Code generation for an expression*)
 and sexpr_gen llbuilder = function
@@ -99,12 +100,28 @@ and stmt_gen llbuilder = function
 |  _ -> raise (Failure ("unknown statement"))
   
 
+
+(*Class stubs and class gen created here*)
 let class_stub_gen s =
   let class_type = L.named_struct_type context s.scname in
   Hash.add class_types s.scname class_type
 
-(*let class_gen s =*)
-    
+let class_gen s =
+  let class_type = Hash.find class_types s.scname in
+  let type_list = List.map  (function A.Vdecl(d,_) -> get_llvm_type d) s.scbody.sfields in
+  let name_list = List.map (function A.Vdecl(_,s) -> s) s.scbody.sfields in
+
+  (*Addition of a key field to all structs/classes, assuming serialized*)
+  let type_list = i32_t :: type_list in
+  let name_list = ".key" :: name_list in
+
+  let type_array = (Array.of_list type_list) in
+  List.iteri (fun typ name -> 
+    let n = s.scname ^ "." ^ name in
+    Hash.add class_field_indexes n typ; 
+  ) name_list;
+  L.struct_set_body class_type type_array true
+
 
 (*Code generation for the main function of program*)
 let main_gen main = 
@@ -122,7 +139,7 @@ let translate sprogram =
   (*(raise (Failure("In codegen")))*)
 
   let _ = List.map (fun s -> class_stub_gen s) sprogram.classes in
-  (*let _ = List.map(fun s -> class_gen s) sprogram.classes in*)
+  let _ = List.map(fun s -> class_gen s) sprogram.classes in
   let _ = main_gen sprogram.main in 
 
   the_module
