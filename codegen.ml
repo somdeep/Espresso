@@ -22,8 +22,10 @@ module Hash = Hashtbl
 open Llvm.MemoryBuffer
 open Llvm_bitreader
 module StringMap = Map.Make(String)
-let values:(string, L.llvalue) Hashtbl.t = Hashtbl.create 50
-let params:(string, L.llvalue) Hashtbl.t = Hashtbl.create 50
+let values:(string, L.llvalue) Hash.t = Hash.create 50
+let params:(string, L.llvalue) Hash.t = Hash.create 50
+let class_types:(string, L.lltype) Hash.t = Hash.create 10
+let struct_field_indexes:(string, int) Hash.t = Hash.create 50
 
 
 let context = L.global_context ()
@@ -39,11 +41,36 @@ let i64_t = L.i64_type context;;
 let void_t = L.void_type context;;
 
 
+
+(*Code generation for a string*)
+let rec string_gen llbuilder s = 
+  L.build_global_stringptr s "tmp" llbuilder
+
+
+(*return corresponding llvm types for Ast datatype*)
+and get_llvm_type (dt : A.typ) = match dt with
+  A.Datatype(Int) -> i32_t
+| A.Datatype(Float) -> f_t
+| A.Datatype(Bool)  -> i1_t
+| A.Datatype(Char)  ->  i8_t
+| A.Datatype(Void)  ->  void_t
+| _ -> raise (Failure ("llvm type not yet supported"))
+
+
+(*Find out if a class/struct in llvm name exists, during object declaration*)
+and find_class name = 
+  try Hash.find class_types name
+  with | Not_found  ->  raise(Failure ("Invalid class struct name")) 
+
 (*Code generation for an expression*)
-let rec sexpr_gen llbuilder = function
+and sexpr_gen llbuilder = function
     SLiteral(i) ->  L.const_int i32_t i
-  | SFloatlit(f)  ->  L.const_float f_t f  
+  | SBoolLit(b) -> if b then L.const_int i1_t 1 else L.const_int i1_t 0
+  | SFloatlit(f)  ->  L.const_float f_t f
+  | SStrlit(s)  ->   string_gen llbuilder s
+  | SCharlit(c) ->  L.const_int i8_t  (Char.code c)
   | _ -> raise (Failure "Not supported in codegen yet")
+
 
 (*Code generation for a return statement*)
 and return_gen llbuilder exp typ =
@@ -52,15 +79,27 @@ and return_gen llbuilder exp typ =
   | _ -> L.build_ret (sexpr_gen llbuilder exp) llbuilder
 
 
+(*Code generation for local declaration*)
+and local_gen llbuilder dt st  =
+  let t = match dt with
+          A.Datatype(A.ObjTyp(name)) -> raise (Failure ("Objtyp not yet supported in codegen"))
+        | _ -> get_llvm_type dt
+  in
+
+  let alloc = L.build_alloca t st llbuilder in
+  Hash.add values st alloc;
+  alloc
+
 (*Codegen for stmt*)
-and stmt_gen llbuilder = function
-  
+and stmt_gen llbuilder = function  
   SBlock st ->  List.hd(List.map (stmt_gen llbuilder) st)
+| SExpr(exp,dt) -> sexpr_gen llbuilder exp
 | SReturn(exp,typ) -> return_gen llbuilder exp typ 
+| SLocal(dt,st) ->  local_gen llbuilder dt st
 |  _ -> raise (Failure ("unknown statement"))
   
 
-
+(*Code generation for the main function of program*)
 let main_gen main = 
   Hash.clear values;
   let ftype = L.function_type i32_t [||] in
