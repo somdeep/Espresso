@@ -139,6 +139,7 @@ let rec get_sexpr_from_expr env expr = match expr with
 	|	Unop(op, expr) -> check_unop env op expr, env
 	|	ArrayAccess(id, expr) -> check_array_access env id expr, env
 	|	HashmapAccess(id, expr) -> check_hashmap_access env id expr, env
+	|	ObjectAccess(expr1, expr2) -> check_object_access env expr1 expr2, env
 	|	Call(func_name, expr_list) -> check_call env func_name expr_list, env
 	| 	Noexpr	->	SNoexpr, env
 
@@ -157,6 +158,7 @@ and get_type_from_sexpr sexpr = match sexpr with
     |   SCall(_,_,t) -> t
     |   SArrayAccess(_,_,t) -> t
 	|   SHashmapAccess(_,_,t) -> t
+	|	SObjectAccess(_,_,t) -> t
     |   SNoexpr -> Ast.Datatype(Void)
 
 (* get a list of sexprs from a list of exprs *)
@@ -327,8 +329,7 @@ and check_assignment env expr1 expr2 =
 	let sexpr1, _ = get_sexpr_from_expr env expr1 in
 	let sexpr, _ = get_sexpr_from_expr env expr2 in
 	let type_id = get_type_from_sexpr sexpr1 in match sexpr1 with 
-	(******* add hashmap type and object type here ******)
-		SId(_,_) | SArrayAccess(_,_,_) | SHashmapAccess(_,_,_) ->
+		SId(_,_) | SArrayAccess(_,_,_) | SHashmapAccess(_,_,_) | SObjectAccess(_,_,_) ->
 									(let type_sexpr = get_type_from_sexpr sexpr in match (type_id, type_sexpr) with
 										Datatype(ObjTyp(t1)), Datatype(ObjTyp(t2)) -> 
 																	if t1 = t2 
@@ -420,6 +421,55 @@ and check_hashmap_access env id expr =
 		|	(_, Datatype(prim))  -> raise(Failure("identifier " ^ id ^ " is not a valid hashmap type "))
 		| 	(_, _) -> raise(Failure(" Hashmap currently supports only primitive "))	
 
+(* semantically check object access *)
+and check_object_access env expr1 expr2 = 
+	(* verify that the invoking object is a valid identifier *)
+	let check_obj_id expr = match expr with 
+		Id obj -> SId(obj, get_id_data_type env obj) 
+	|	ArrayAccess(id, expr) -> check_array_access env id expr
+	in
+	
+	(* get object's class name *)
+	let get_class_name obj = match obj with
+		Datatype(ObjTyp(class_name)) -> class_name
+	|	_ -> raise(Failure(" expected object type!"))
+	in
+
+	let rec check_member lhs_env obj_type top_env mem_expr =
+		 let class_name = get_class_name obj_type in
+		 match mem_expr with
+		 	(* search list of member fields in the class *)
+		 	Id id -> (let class_map = StringMap.find class_name lhs_env.env_class_maps in
+			 			let match_field field = match field with
+						 	Vdecl(dt, field_name) -> SId(id, dt), lhs_env
+						in
+						try match_field (StringMap.find id class_map.field_map)
+						with | Not_found -> raise(Failure("Unrecognized member")) )
+		|	Call(func_name, expr_list) ->	(* handle member functions *)
+											check_call lhs_env func_name expr_list, lhs_env
+		|	ObjectAccess(e1, e2) -> (* handle recursive object access patterns *)
+									(let old_env = lhs_env in
+									let lhs,new_lhs_env = check_member lhs_env obj_type top_env e1 in
+									let lhs_type = get_type_from_sexpr lhs in
+									let new_env = update_env_name new_lhs_env (get_class_name lhs_type) in
+									
+									let rhs, _ = check_member new_env lhs_type lhs_env e2 in
+									let rhs_type = get_type_from_sexpr rhs in 
+									SObjectAccess(lhs, rhs, rhs_type), old_env)
+
+		|	_ -> raise(Failure("Unrecognized datatype! "))
+	in
+
+	(* check left-side of object access - it should resolve to some identifier *)
+	let sexpr1 = check_obj_id expr1 in
+	let type_obj = get_type_from_sexpr sexpr1 in
+	let env_obj = update_env_name env (get_class_name type_obj) in
+	
+	(* check the right side - it should belong to the invoking object's class *)
+	let sexpr2,_ = check_member env_obj type_obj env expr2 in
+	let type_member = get_type_from_sexpr sexpr2 in
+	SObjectAccess(sexpr1, sexpr2, type_member)
+	
 (* check function call semantics *)
 (* pass invoking object's environment in env if this is invoked by an object *)
 and check_call env func_name expr_list =

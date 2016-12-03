@@ -12,8 +12,8 @@ class Test {
      x = arr[5];
      hashmap<int,int> map;
      class Work [5]wArr;
-     x = map<x>;
-     map<arr[0]> = x;
+     x = map{x};
+     map{arr[0]} = x;
      wArr[6] = wObj;     
      return 0;
    }

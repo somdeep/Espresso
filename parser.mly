@@ -5,7 +5,7 @@ open Ast
 %}
 
 %token CLASS
-%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON
+%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON DOT
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK HASHMAP
@@ -26,6 +26,7 @@ open Ast
 %left PLUS MINUS
 %left TIMES DIVIDE MODULUS POWER
 %right NOT SUB
+%right DOT
 
 %start program
 %type <Ast.program> program
@@ -160,7 +161,8 @@ expr:
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
   | ID LSQUARE expr RSQUARE { ArrayAccess($1, $3) }
-  | ID LT expr GT { HashmapAccess($1, $3) }
+  | ID LBRACE expr RBRACE { HashmapAccess($1, $3) }
+  | expr DOT expr { ObjectAccess($1, $3) }
   
 
 actuals_opt:

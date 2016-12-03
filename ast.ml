@@ -26,6 +26,7 @@ type expr =
   | Call of string * expr list
   | ArrayAccess of string * expr
   | HashmapAccess of string * expr
+  | ObjectAccess of expr * expr
   | Noexpr
 
 type var_decl = Vdecl of typ * string
@@ -133,6 +134,7 @@ let rec string_of_expr = function
   | Assign(e1, e2) -> string_of_expr e1 ^ " = " ^ string_of_expr e2
   | ArrayAccess(v, e) -> v ^ "[" ^ string_of_expr e ^ "]"
   | HashmapAccess(v, e) -> v ^ "<" ^ string_of_expr e ^ ">"
+  | ObjectAccess(e1, e2) -> string_of_expr e1 ^ "." ^ string_of_expr e2
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""

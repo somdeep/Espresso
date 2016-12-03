@@ -13,6 +13,7 @@ type sexpr =
   | SCall of string * sexpr list * typ
   | SArrayAccess of string * sexpr * typ
   | SHashmapAccess of string * sexpr * typ
+  | SObjectAccess of sexpr * sexpr * typ
   | SNoexpr
 
 (*type var_decl = Vdecl of typ * string*)

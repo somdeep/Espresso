@@ -24,6 +24,7 @@ rule token = parse
 | '/'      { DIVIDE }
 | '='      { ASSIGN }
 | '%'	   { MODULUS }
+| '.'     { DOT }
 | "**"	   { POWER }
 | "=="     { EQ }
 | "!="     { NEQ }
