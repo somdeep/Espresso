@@ -147,7 +147,7 @@ expr:
   | expr DIVIDE expr { Binop($1, Div,   $3) }
   | expr MODULUS expr { Binop($1, Mod,   $3) }
   | expr POWER expr { Binop($1, Pow,   $3) }
-  | expr EQ     expr { Binop($1, Equal, $3) }
+  | expr EQ     expr { Binop($1, Eq, $3) }
   | expr NEQ    expr { Binop($1, Neq,   $3) }
   | expr LT     expr { Binop($1, Lt,  $3) }
   | expr LEQ    expr { Binop($1, Leq,   $3) }

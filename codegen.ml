@@ -98,9 +98,58 @@ let rec id_gen llbuilder id dt isderef checkparam =
   | _ ->  raise (Failure ("LHS of an assignment must be stand-alone"))
   in*)
 
+and binop_gen llbuilder expr1 op expr2 dt = 
+  let le1 = sexpr_gen llbuilder expr1 in
+  let le2 = sexpr_gen llbuilder expr2 in
 
+  let int_ops e1 op e2 = match op with
+  		A.Add 		-> L.build_add e1 e2 "addtmp" llbuilder
+	| 	A.Sub 		-> L.build_sub e1 e2 "subtmp" llbuilder
+	| 	A.Mult 		-> L.build_mul e1 e2 "multmp" llbuilder
+	| 	A.Div 		-> L.build_sdiv e1 e2 "divtmp" llbuilder
+	| 	A.Mod 		-> L.build_srem e1 e2 "sremtmp" llbuilder
+	| 	A.Eq 		  -> L.build_icmp L.Icmp.Eq e1 e2 "eqtmp" llbuilder
+	| 	A.Neq 		-> L.build_icmp L.Icmp.Ne e1 e2 "neqtmp" llbuilder
+	| 	A.Lt 		  -> L.build_icmp L.Icmp.Slt e1 e2 "lesstmp" llbuilder
+	| 	A.Leq 		-> L.build_icmp L.Icmp.Sle e1 e2 "leqtmp" llbuilder
+	| 	A.Gt		  -> L.build_icmp L.Icmp.Sgt e1 e2 "sgttmp" llbuilder
+	| 	A.Geq 		-> L.build_icmp L.Icmp.Sge e1 e2 "sgetmp" llbuilder
+	| 	A.And 		-> L.build_and e1 e2 "andtmp" llbuilder
+	| 	A.Or 			-> L.build_or  e1 e2 "ortmp" llbuilder
+	| 	_ 			-> raise (Failure("unsupported operator for integer arguments "))
+	in 
 
+  let float_ops e1 op e2 = match op with
+		  A.Add 		-> L.build_fadd e1 e2 "flt_addtmp" llbuilder
+	| 	A.Sub 		-> L.build_fsub e1 e2 "flt_subtmp" llbuilder
+	| 	A.Mult 		-> L.build_fmul e1 e2 "flt_multmp" llbuilder
+	| 	A.Div 		-> L.build_fdiv e1 e2 "flt_divtmp" llbuilder
+	| 	A.Mod 		-> L.build_frem e1 e2 "flt_sremtmp" llbuilder
+	| 	A.Eq 	    -> L.build_fcmp L.Fcmp.Oeq e1 e2 "flt_eqtmp" llbuilder
+	| 	A.Neq 		-> L.build_fcmp L.Fcmp.One e1 e2 "flt_neqtmp" llbuilder
+	| 	A.Lt 		  -> L.build_fcmp L.Fcmp.Ult e1 e2 "flt_lesstmp" llbuilder
+	| 	A.Leq 		-> L.build_fcmp L.Fcmp.Ole e1 e2 "flt_leqtmp" llbuilder
+	| 	A.Gt		  -> L.build_fcmp L.Fcmp.Ogt e1 e2 "flt_sgttmp" llbuilder
+	| 	A.Geq 		-> L.build_fcmp L.Fcmp.Oge e1 e2 "flt_sgetmp" llbuilder
+	| 	_ 			-> raise (Failure("unsupported operation for floating point arguments"))
+	in 
 
+  (* handle object comparisons *)
+	let non_primitive_types e1 op e2 = match op with 
+			A.Eq -> L.build_is_null e1 "tmp" llbuilder 
+		| 	A.Neq -> L.build_is_not_null e1 "tmp" llbuilder 
+		| 	_ 	-> raise (Failure("unsupported operator for objects "))
+	in
+
+  let match_types dt = match dt with
+    A.Datatype(Float) -> float_ops le1 op le2 
+  | A.Datatype(Int) | A.Datatype(Bool) | A.Datatype(Char) -> int_ops le1 op le2
+  | A.Datatype(ObjTyp(_)) | A.ArrayType(_,_) | A.Hashmaptype(_,_) ->  non_primitive_types le1 op le2
+  | _ -> raise(Failure("Unrecognized datatype! "))
+  in
+  match_types dt
+
+  (* *)
 (*Code generation for an expression*)
 and sexpr_gen llbuilder = function
     SLiteral(i) ->  L.const_int i32_t i
@@ -109,6 +158,7 @@ and sexpr_gen llbuilder = function
   | SStrlit(s)  ->   string_gen llbuilder s
   | SCharlit(c) ->  L.const_int i8_t  (Char.code c)
   | SId(name,dt)  ->  id_gen llbuilder name dt true false
+  | SBinop(expr1, op, expr2, dt) -> binop_gen llbuilder expr1 op expr2 dt 
   (*| SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt*)
   | _ -> raise (Failure "Not supported in codegen yet")
 

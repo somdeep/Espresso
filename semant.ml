@@ -377,7 +377,7 @@ and check_binop env expr1 op expr2 =
 	match op with
 		Add | Sub | Mult | Div | Mod | Pow -> check_arithmetic_ops sexpr1 sexpr2 op type1 type2
 	|	Lt | Leq | Gt | Geq -> check_relational_ops sexpr1 sexpr2 op type1 type2
-	|	Equal | Neq -> check_equality_ops sexpr1 sexpr2 op type1 type2
+	|	Eq | Neq -> check_equality_ops sexpr1 sexpr2 op type1 type2
 	|	And | Or -> check_logical_ops sexpr1 sexpr2 op type1 type2
 	|	_ -> raise (Failure("unknown binary operator "))
 

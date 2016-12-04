@@ -7,7 +7,7 @@ class work
 		class animal obj;
 		int b;
 		char c;
-		return 1;
+		return b+1*2-b*3;
 	}
 
 }
@@ -19,8 +19,8 @@ class animal
 	int perform()
 	{
 		int i;
-		i = 1;
-		return i;
+		i = 1 + i;
+		return i*2;
 	}
 }
 	
