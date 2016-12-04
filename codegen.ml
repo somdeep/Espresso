@@ -88,16 +88,6 @@ let rec id_gen llbuilder id dt isderef checkparam =
         else _val
     with | Not_found -> raise (Failure ("Unknown variable " ^ id)) 
 
-(*and assign_gen llbuilder lhs rhs dt = 
-  let rhs_type = Sem.get_type_from_sexpr rhs in
-
-  (*code generation for the lhs expression*)
-  let lhs, isObjacc = match lhs with
-  | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false,false
-  | SArrayAccess(st,exp,dt) -> raise (Failure ("yet to add"))
-  | _ ->  raise (Failure ("LHS of an assignment must be stand-alone"))
-  in*)
-
 and binop_gen llbuilder expr1 op expr2 dt = 
   let le1 = sexpr_gen llbuilder expr1 in
   let le2 = sexpr_gen llbuilder expr2 in
@@ -149,7 +139,36 @@ and binop_gen llbuilder expr1 op expr2 dt =
   in
   match_types dt
 
-  (* *)
+
+and assign_gen llbuilder lhs rhs dt = 
+  let rhs_type = Sem.get_type_from_sexpr rhs in
+
+  (*code generation for the lhs expression*)
+  let lhs, isObjacc = match lhs with
+  | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false,false
+  | SArrayAccess(st,exp,dt) -> raise (Failure ("yet to add"))
+  | _ ->  raise (Failure ("LHS of an assignment must be stand-alone"))
+  in
+
+  let rhs = match rhs with
+  | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false
+  | Sast.SObjectAccess(_,_,_) ->  raise(Failure ("Yet to add object access to assign codegen"))
+  | _ ->  sexpr_gen llbuilder rhs
+  in
+
+  let rhs = match dt with 
+    A.Datatype(ObjTyp(_)) ->  raise (Failure ("yet to add to codegen"))
+  | _ ->  rhs
+  in
+  let rhs = match dt,rhs_type with
+    A.Datatype(Char),A.Datatype(Int)  ->  L.build_uitofp rhs i8_t "tmp" llbuilder
+  | A.Datatype(Int),A.Datatype(Char)  ->  L.build_uitofp rhs i32_t  "tmp" llbuilder
+  | _   -> rhs
+  in
+
+  ignore(L.build_store rhs lhs llbuilder);
+  rhs
+
 (*Code generation for an expression*)
 and sexpr_gen llbuilder = function
     SLiteral(i) ->  L.const_int i32_t i
@@ -159,7 +178,7 @@ and sexpr_gen llbuilder = function
   | SCharlit(c) ->  L.const_int i8_t  (Char.code c)
   | SId(name,dt)  ->  id_gen llbuilder name dt true false
   | SBinop(expr1, op, expr2, dt) -> binop_gen llbuilder expr1 op expr2 dt 
-  (*| SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt*)
+  | SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt
   | _ -> raise (Failure "Not supported in codegen yet")
 
 

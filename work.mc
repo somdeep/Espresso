@@ -7,6 +7,7 @@ class work
 		class animal obj;
 		int b;
 		char c;
+		b = b*5+b;
 		return b+1*2-b*3;
 	}
 
