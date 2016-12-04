@@ -6,7 +6,9 @@ class work
 		
 		class animal obj;
 		int b;
-		char c;
+		int c;
+		b=1;
+		c=b;
 		return 1;
 	}
 
