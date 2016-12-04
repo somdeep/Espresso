@@ -1,40 +1,26 @@
 class work
 {
 	int a;	
-	void main()
+	int main()
 	{
-		print(1);
+		
+		class animal obj;
+		int b;
+		char c;
+		return 1;
 	}
-	int work2()
-	{
-	}
-    void work()
-    {
-    }
 
 }
-
-class work2
+class animal
 {
-	int a;
-	void main2()
+	char b;
+	bool x;
+	
+	int perform()
 	{
-		int a;
-        int a;
-		hashmap <int,int> hm;
-		main();
-	}
-	
-
-
-	
-	
-	
-	int work()
-	{
-	}
-
-	int work2()
-	{
+		int i;
+		i = 1;
+		return i;
 	}
 }
+	
