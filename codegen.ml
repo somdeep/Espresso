@@ -182,6 +182,49 @@ and sexpr_gen llbuilder = function
   | _ -> raise (Failure "Not supported in codegen yet")
 
 
+(*Code generation for if statement*)
+and if_stmt_gen llbuilder exp then_st (else_st:Sast.sstmt) =
+    let cond_val = sexpr_gen llbuilder exp in
+    
+    (*Write the first block, initial part, jump to relevant else parts as well*)
+    let start_bb = L.insertion_block llbuilder in
+    let the_func = L.block_parent start_bb in
+
+    let then_bb = L.append_block context "then" the_func in
+
+    (*Push out the 'then' output result/value*)
+    L.position_at_end then_bb llbuilder;
+    let _ = stmt_gen llbuilder then_st in
+
+
+    (*codegen of then block modifies current block *)
+    let new_then_bb = L.insertion_block llbuilder in 
+    
+    (*push out else block in new location of llvm block code*)
+    let else_bb = L.append_block context "else" the_func in
+    L.position_at_end else_bb llbuilder;
+    let _ = stmt_gen llbuilder else_st in 
+
+
+    let new_else_bb = L.insertion_block llbuilder in 
+    
+    let merge_bb = L.append_block context "ifcont" the_func in
+    L.position_at_end merge_bb llbuilder;
+
+    let else_bb_val = L.value_of_block new_else_bb in
+
+    L.position_at_end start_bb llbuilder;
+    ignore(L.build_cond_br cond_val then_bb else_bb llbuilder);
+
+    L.position_at_end new_then_bb llbuilder;
+    ignore(L.build_br merge_bb llbuilder);
+    L.position_at_end new_else_bb llbuilder;
+    ignore(L.build_br merge_bb llbuilder);
+
+    L.position_at_end merge_bb llbuilder;
+
+    else_bb_val 
+
 (*Code generation for a return statement*)
 and return_gen llbuilder exp typ =
   match exp with 
@@ -205,6 +248,7 @@ and stmt_gen llbuilder = function
   SBlock st ->  List.hd(List.map (stmt_gen llbuilder) st)
 | SExpr(exp,dt) -> sexpr_gen llbuilder exp
 | SReturn(exp,typ) -> return_gen llbuilder exp typ
+| SIf(exp,st1,st2)  ->  if_stmt_gen llbuilder exp st1 st2
 | SLocal(dt,st) ->  local_gen llbuilder dt st
 |  _ -> raise (Failure ("unknown statement"))
   

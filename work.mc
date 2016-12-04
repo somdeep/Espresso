@@ -6,8 +6,19 @@ class work
 		
 		class animal obj;
 		int b;
+		b=1;
 		char c;
 		b = b*5+b;
+		int d;
+		if(b>1)
+		{
+			d=1;
+		}
+		else
+		{
+			d=2;
+		}
+		
 		return b+1*2-b*3;
 	}
 
