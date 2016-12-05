@@ -41,6 +41,12 @@ let i64_t = L.i64_type context;;
 let void_t = L.void_type context;;
 
 
+let is_loop = ref false
+
+let (br_block) = ref (L.block_of_value (L.const_int i32_t 0))
+let (cont_block) = ref (L.block_of_value (L.const_int i32_t 0))
+
+
 
 (*Code generation for a string*)
 let rec string_gen llbuilder s = 
@@ -255,6 +261,59 @@ and if_stmt_gen llbuilder exp then_st (else_st:Sast.sstmt) =
 
     else_bb_val 
 
+(*Code generation for a for statement*)
+and for_gen llbuilder init_st cond_st inc_st body_st =
+  let old_val = !is_loop in
+  is_loop := true;
+
+  let the_func = L.block_parent (L.insertion_block llbuilder) in
+
+  (*emit initialization code first*)
+  let _ = sexpr_gen llbuilder init_st in
+
+  (*Basically create the associated blocks for llvm : loop, inc, cond, afterloop*)
+  let loop_bb = L.append_block context "loop" the_func in
+  let inc_bb = L.append_block context "inc" the_func in
+  let cond_bb = L.append_block context "cond" the_func in
+  let after_bb = L.append_block context "afterloop" the_func in
+
+  let _ = if not old_val then
+    cont_block := inc_bb;
+    br_block := after_bb;
+  in
+
+  (*hit the condition statement with a jump*)
+  ignore (L.build_br cond_bb llbuilder);
+
+  L.position_at_end loop_bb llbuilder;
+
+  (*emit the code generated for the body of statements for the current loop*)
+  ignore (stmt_gen llbuilder body_st);
+
+  let bb = L.insertion_block llbuilder in
+  L.move_block_after bb inc_bb;
+  L.move_block_after inc_bb cond_bb;
+  L.move_block_after cond_bb after_bb;
+  ignore (L.build_br inc_bb llbuilder);
+
+  (*Start physical insertion at inc*)
+  L.position_at_end inc_bb llbuilder;
+
+  (*emit the block of inc generated code*)
+  let _ = sexpr_gen llbuilder inc_st in
+  ignore (L.build_br cond_bb llbuilder);
+  
+  L.position_at_end cond_bb llbuilder;
+
+  let cond_val = sexpr_gen llbuilder cond_st in 
+  ignore (L.build_cond_br cond_val loop_bb after_bb llbuilder);
+
+  L.position_at_end after_bb llbuilder;
+
+  is_loop := old_val;
+
+  L.const_null f_t
+
 (*Code generation for a return statement*)
 and return_gen llbuilder exp typ =
   match exp with 
@@ -279,6 +338,7 @@ and stmt_gen llbuilder = function
 | SExpr(exp,dt) -> sexpr_gen llbuilder exp
 | SReturn(exp,typ) -> return_gen llbuilder exp typ
 | SIf(exp,st1,st2)  ->  if_stmt_gen llbuilder exp st1 st2
+| SFor(exp1,exp2,exp3,st) ->  for_gen llbuilder exp1 exp2 exp3 st
 | SLocal(dt,st) ->  local_gen llbuilder dt st
 |  _ -> raise (Failure ("unknown statement"))
   
