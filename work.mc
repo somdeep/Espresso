@@ -1,6 +1,9 @@
 class work
 {
-	int a;	
+	int a;
+
+	
+
 	int main()
 	{
 		
@@ -11,7 +14,7 @@ class work
 		b = b*5+b;
 		int d;
 		String s;
-//		s="work";
+		s = "hello world";
 		if(b>1)
 		{
 			d=1;
@@ -25,12 +28,13 @@ class work
 		f = 1.2;
 		char [3]carr ;
 		print_int(b+2*b-3);
-		print_string("hello\n");
+		print_string("abc");
 		print_string(s);
 //		print_char_array(carr[2]);
 		print_float(f);
 		return b+1*2-b*3;
 	}
+
 
 }
 class animal

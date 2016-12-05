@@ -1,9 +1,15 @@
 (* Ocamllex scanner for MicroC *)
 
-{ open Parser }
-let digit =  ['0'-'9']
-let char = ''' ( _? ) '''
+{ open Parser 
 
+let unescape s =
+    	Scanf.sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
+}
+let digit =  ['0'-'9']
+let charl = ''' ( _? ) '''
+let escape = '\\' ['\\' ''' '"' 'n' 'r' 't']
+let ascii = ([' '-'!' '#'-'[' ']'-'~'])
+let string = '"' ( (ascii | escape)* as s) '"'
 
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
@@ -54,8 +60,8 @@ rule token = parse
 | "class"  { CLASS }
 | ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
-| "\"" (_*) "\""  as lxm { STRLIT(lxm) }
-| char as lxm { CHARLIT(String.get lxm 1) }
+| string { STRLIT(unescape s) }
+| charl as lxm { CHARLIT(String.get lxm 1) }
 | ['0'-'9']+['.']['0'-'9']+ as lxm { FLOATLIT(float_of_string lxm) }
 | eof { EOF }
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
