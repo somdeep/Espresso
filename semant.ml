@@ -78,7 +78,11 @@ let get_reserved_funcs =
 		}
 	in
     let reserved_functions = [
-        reserved_struct "print" (Datatype(Void)) ([]);
+        reserved_struct "print_int" (Datatype(Void)) ([Formal(Datatype(Int), "int_arg")]);
+		reserved_struct "print_float" (Datatype(Void)) ([Formal(Datatype(Float), "float_arg")]);
+		reserved_struct "print_char" (Datatype(Void)) ([Formal(Datatype(Char), "char_arg")]);
+		reserved_struct "print_string" (Datatype(Void)) ([Formal(Datatype(String), "string_arg")]);
+		reserved_struct "print_char_array" (Datatype(Void)) ([Formal(ArrayType(Char, 1), "char_arr_arg")]);
     ] in
     reserved_functions
     
@@ -499,9 +503,9 @@ and check_call env func_name expr_list =
 	let func_full_name = env.env_name ^ "." ^ func_name in
 	(* look for the function in the list of reserved functions. If it is not found there
 		look at the list of member functions of the context_class *)
-	try let func_handle = StringMap.find func_full_name context_class_map.reserved_func_map in
+	try let func_handle = StringMap.find func_name context_class_map.reserved_func_map in
 		let actuals_list = get_actual_params func_handle.sformals sexpr_list in
-		SCall(func_full_name, actuals_list, func_handle.styp) with
+		SCall(func_name, actuals_list, func_handle.styp) with
 	|	Not_found ->
 		(* search the list of member functions *)
 		try let func_handle = StringMap.find func_full_name context_class_map.func_map in

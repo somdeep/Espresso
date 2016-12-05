@@ -179,8 +179,38 @@ and sexpr_gen llbuilder = function
   | SId(name,dt)  ->  id_gen llbuilder name dt true false
   | SBinop(expr1, op, expr2, dt) -> binop_gen llbuilder expr1 op expr2 dt 
   | SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt
+  | SCall(name, expr_list, dt) -> call_gen llbuilder name expr_list dt
   | _ -> raise (Failure "Not supported in codegen yet")
 
+and call_gen  llbuilder func_name expr_list dt = match func_name with
+    "print_int" | "print_char"
+    | "print_float" | "print_string"
+    | "print_char_array" -> print_gen llbuilder expr_list
+  | _ -> raise(Failure("function " ^ func_name ^ " did not match any known function!"))
+
+and get_lib_func fname = match (L.lookup_function fname the_module) with
+    None -> raise (Failure("function " ^ fname ^ " was not found!"))
+  | Some func -> func
+
+
+and print_gen llbuilder expr_list = 
+    (* currently we don't support boolean types *)
+    (* generate llvm code for the expression list *)
+    let params = List.map (fun expr -> sexpr_gen llbuilder expr) expr_list in
+    let param_types = List.map (Semant.get_type_from_sexpr) expr_list in
+    let get_format_string dt = match dt with
+    	A.ArrayType(Char, 1) 	-> "%s"
+		| 	A.Datatype(Int) 		-> "%d"
+		| 	A.Datatype(Float) 	-> "%f"
+		| 	A.Datatype(String) 	-> "%s"
+		| 	A.Datatype(Char) 		-> "%c"
+		| 	_ 						    -> raise (Failure("Datatype not supported by codegen!"))
+    in
+    let fmt_str = List.fold_left (fun s t -> s ^ get_format_string t) "" param_types in        
+    let s = sexpr_gen llbuilder (SStrlit(fmt_str)) in
+	  let zero = L.const_int i32_t 0 in 
+	  let s = L.build_in_bounds_gep s [| zero |] "tmp" llbuilder in
+	  L.build_call (get_lib_func "printf") (Array.of_list (s :: params)) "tmp" llbuilder
 
 (*Code generation for if statement*)
 and if_stmt_gen llbuilder exp then_st (else_st:Sast.sstmt) =
@@ -286,11 +316,17 @@ let main_gen main =
   let _ = stmt_gen llbuilder (SBlock(main.sbody)) in
   L.build_ret (L.const_int i32_t 0) llbuilder
 
+(* declare library functions *)
+let construct_library_functions = 
+  let printf_type = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+	let _ = L.declare_function "printf" printf_type the_module in
+  ()
+
 let translate sprogram =
   (*match sprogram with *)
 
   (*(raise (Failure("In codegen")))*)
-
+  let _ = construct_library_functions in
   let _ = List.map (fun s -> class_stub_gen s) sprogram.classes in
   let _ = List.map(fun s -> class_gen s) sprogram.classes in
   let _ = main_gen sprogram.main in 

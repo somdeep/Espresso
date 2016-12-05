@@ -1,10 +1,19 @@
 class Work {
 
       int work_field;
+      int get_work_from_work() {
+      	  return 0;
+      }
+
 }
 
 class Test {
   int x;
+
+      int get_work() {
+      	  return 0;
+      }
+
 
   int getSum(int n) {
       int i;
@@ -17,7 +26,9 @@ class Test {
   
   int main(int y) {
      x = 10;
-     x = getSum(x);
+     class Work w;
+     x = getSum(x) + get_work() + w.get_work_from_work();
+     print_int(x);
 //     print(x);
      return 0;
    }
