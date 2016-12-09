@@ -80,7 +80,10 @@ and find_class name =
 (*Code generation for any expression that is an id*)
 let rec id_gen llbuilder id dt isderef checkparam =
   if isderef then
-    try Hash.find params id
+    try 
+      let _pval = Hash.find params id in
+      L.build_load _pval id llbuilder;
+      raise(Failure("reached here!"))
     with | Not_found ->
     try let _val = Hash.find values id in
     L.build_load _val id llbuilder
@@ -192,9 +195,15 @@ and call_gen  llbuilder func_name expr_list dt = match func_name with
     "print_int" | "print_char"
     | "print_float" | "print_string"
     | "print_char_array" -> print_gen llbuilder expr_list
-  | _ -> raise(Failure("function " ^ func_name ^ " did not match any known function!"))
+    | _ -> (let params = List.map (sexpr_gen llbuilder) expr_list in
+            (* func_name is unique since it is prepended with class_name always *)
+            match dt with 
+                Datatype(Void) -> L.build_call (func_lookup func_name) (Array.of_list params) "" llbuilder
+              | _ -> L.build_call (func_lookup func_name) (Array.of_list params) "tmp" llbuilder
+            )
+  (*| _ -> raise(Failure("function " ^ func_name ^ " did not match any known function!"))*)
 
-and get_lib_func fname = match (L.lookup_function fname the_module) with
+and func_lookup fname = match (L.lookup_function fname the_module) with
     None -> raise (Failure("function " ^ fname ^ " was not found!"))
   | Some func -> func
 
@@ -216,7 +225,7 @@ and print_gen llbuilder expr_list =
     let s = sexpr_gen llbuilder (SStrlit(fmt_str)) in
 	  let zero = L.const_int i32_t 0 in 
 	  let s = L.build_in_bounds_gep s [| zero |] "tmp" llbuilder in
-	  L.build_call (get_lib_func "printf") (Array.of_list (s :: params)) "tmp" llbuilder
+	  L.build_call (func_lookup "printf") (Array.of_list (s :: params)) "tmp" llbuilder
 
 (*Code generation for if statement*)
 and if_stmt_gen llbuilder exp then_st (else_st:Sast.sstmt) =
@@ -343,6 +352,41 @@ and stmt_gen llbuilder = function
 |  _ -> raise (Failure ("unknown statement"))
   
 
+let init_params func formals = 
+    let formals = Array.of_list (formals) in
+      
+
+    Array.iteri (fun i v ->
+      let name = formals.(i) in
+      let name = A.string_of_formal_name name in
+      L.set_value_name name v;
+      Hash.add params name v;
+      try let _pval = Hash.find params name in
+          raise(Failure("found in hash"))
+      with | Not_found -> raise(Failure(" NOT found in hash: "))
+    ) (L.params func)
+
+(* function prototypes are declared here in llvm. This is used later to generate Call instructions *)
+let func_stub_gen sfunc_decl =
+  let params_types = List.rev (List.fold_left (fun l-> (function A.Formal(ty, _) -> get_llvm_type ty :: l; l)) [] sfunc_decl.sformals) in
+  let func_type = L.function_type (get_llvm_type sfunc_decl.styp) (Array.of_list params_types) in
+  L.define_function sfunc_decl.sfname func_type the_module
+
+(* function body is generated in llvm *)
+let func_body_gen sfunc_decl = 
+  Hash.clear values;
+  Hash.clear params;
+  let func = func_lookup sfunc_decl.sfname in
+  
+  (* this generates the entry point *)
+  let llbuilder = L.builder_at_end context (L.entry_block func) in
+  let _ = init_params func sfunc_decl.sformals in
+  
+  let _ = stmt_gen llbuilder (SBlock(sfunc_decl.sbody)) in
+  if sfunc_decl.styp = Datatype(Void) 
+		then ignore(L.build_ret_void llbuilder);
+	()
+
 
 (*Class stubs and class gen created here*)
 let class_stub_gen s =
@@ -389,6 +433,12 @@ let translate sprogram =
   let _ = construct_library_functions in
   let _ = List.map (fun s -> class_stub_gen s) sprogram.classes in
   let _ = List.map(fun s -> class_gen s) sprogram.classes in
+
+  (* generate llvm code for function prototypes *)
+  let _ = List.map (fun f -> func_stub_gen f) sprogram.functions in
+  (* generate llvm code for the function body *)
+  let _ = List.map (fun f -> func_body_gen f) sprogram.functions in
+
   let _ = main_gen sprogram.main in 
 
   the_module

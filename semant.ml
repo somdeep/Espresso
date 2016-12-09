@@ -87,6 +87,7 @@ let get_reserved_funcs =
     reserved_functions
     
 let get_class_maps cdecls reserved_maps = 
+	let reserved_funcs = reserved_maps in
     let setup_class_map m cdecl =
         (* get all fields belonging to the class cdecl. Raise error if duplicates are found *)
         let field_maps m = function Vdecl(typ, name) ->
@@ -103,8 +104,9 @@ let get_class_maps cdecls reserved_maps =
             if (StringMap.mem func_full_name m)
                 then raise (Failure ("duplicate function : " ^ func_full_name))
             else
-                (* check against reserved func maps here *)
-                (StringMap.add (func_full_name) fdecl m)
+				if (StringMap.mem fdecl.fname reserved_funcs)
+					then raise(Failure("function " ^ fdecl.fname ^ " is a reserved keyword!"))
+					else (StringMap.add (func_full_name) fdecl m)
         in
 
         (* check for duplicate classes and add their fields, methods respectively *)
@@ -613,7 +615,9 @@ let get_sast class_maps reserved cdecls =
 	
 	(* look through SAST functions *)
 	let find_main = (fun f -> match f.sfname with "main" -> true | _ -> false) in
-	
+	let remove_main funcs = 
+		List.filter (fun func -> not (find_main func)) funcs
+	in
 	let get_main func_list = 
 		let mains = (List.find_all find_main func_list) in
 		if List.length mains < 1 then 
@@ -626,9 +630,9 @@ let get_sast class_maps reserved cdecls =
 	let handle_cdecl cdecl = 
 		let class_map = StringMap.find cdecl.cname class_maps in
 		 (* apply convert_fdecl_to_sfdecl on each method from the class and accumulate the corresponding sfdecls in the list *)
-        let sfunc_list = List.fold_left (fun ls f -> (convert_fdecl_to_sfdecl class_maps reserved class_map cdecl.cname f) :: ls) [] cdecl.cbody.methods in
-		let scdecl = get_scdecl_from_cdecl sfunc_list cdecl in
-		(scdecl, sfunc_list)
+        let sfunc_list_with_main = List.fold_left (fun ls f -> (convert_fdecl_to_sfdecl class_maps reserved class_map cdecl.cname f) :: ls) [] cdecl.cbody.methods in
+		let scdecl = get_scdecl_from_cdecl sfunc_list_with_main cdecl in
+		(scdecl, sfunc_list_with_main)
 	in
 
 	let iter_cdecls t c = 
@@ -641,7 +645,7 @@ let get_sast class_maps reserved cdecls =
 	let main = get_main sfunctions_list in
 	{
 		classes = scdecl_list;
-		functions = sfunctions_list; (* Should we remove main from this ? *)
+		functions = (remove_main sfunctions_list); (* Should we remove main from this ? *)
 		main = main;
 		reserved = reserved;
 	}
