@@ -81,9 +81,7 @@ and find_class name =
 let rec id_gen llbuilder id dt isderef checkparam =
   if isderef then
     try 
-      let _pval = Hash.find params id in
-      L.build_load _pval id llbuilder;
-      raise(Failure("reached here!"))
+      Hash.find params id
     with | Not_found ->
     try let _val = Hash.find values id in
     L.build_load _val id llbuilder
@@ -160,7 +158,7 @@ and assign_gen llbuilder lhs rhs dt =
   in
 
   let rhs = match rhs with
-  | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false
+  | Sast.SId(id,dt) ->  id_gen llbuilder id dt true false
   | Sast.SObjectAccess(_,_,_) ->  raise(Failure ("Yet to add object access to assign codegen"))
   | _ ->  sexpr_gen llbuilder rhs
   in
@@ -354,22 +352,20 @@ and stmt_gen llbuilder = function
 
 let init_params func formals = 
     let formals = Array.of_list (formals) in
-      
 
     Array.iteri (fun i v ->
       let name = formals.(i) in
       let name = A.string_of_formal_name name in
       L.set_value_name name v;
       Hash.add params name v;
-      try let _pval = Hash.find params name in
-          raise(Failure("found in hash"))
-      with | Not_found -> raise(Failure(" NOT found in hash: "))
     ) (L.params func)
 
 (* function prototypes are declared here in llvm. This is used later to generate Call instructions *)
 let func_stub_gen sfunc_decl =
-  let params_types = List.rev (List.fold_left (fun l-> (function A.Formal(ty, _) -> get_llvm_type ty :: l; l)) [] sfunc_decl.sformals) in
-  let func_type = L.function_type (get_llvm_type sfunc_decl.styp) (Array.of_list params_types) in
+  let params_types = List.rev (List.fold_left (fun l-> (function A.Formal(ty, _) -> get_llvm_type ty :: l )) [] sfunc_decl.sformals) in
+ 									      
+let func_type = L.function_type (get_llvm_type sfunc_decl.styp) (Array.of_list params_types) in
+(* raise(Failure("reached here!")) *)
   L.define_function sfunc_decl.sfname func_type the_module
 
 (* function body is generated in llvm *)
@@ -413,6 +409,7 @@ let class_gen s =
 (*Code generation for the main function of program*)
 let main_gen main = 
   Hash.clear values;
+  Hash.clear params;
   let ftype = L.function_type i32_t [||] in
   let func = L.define_function "main" ftype the_module in 
   let llbuilder = L.builder_at_end context (L.entry_block func) in

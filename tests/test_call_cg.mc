@@ -1,17 +1,22 @@
 class Test {
 
-      int get_square() {
+      int get(int x) {
       	  int y;
-	  y = 10;
+	  y = 10 + x;
       	  return y * y;
-      }	  
+      }
 
       int main() {
       	  int x;
-	  x = get_square();
+	  x = get(2);
 	  print_int(x);
-	  
-      	  return 0;
+	  if (x == 144) {
+	     print_string("got value 144");
+	  } else {
+	    print_string("f*cked up!");
+	  }
+	  return 0;
       }
 
 }
+
