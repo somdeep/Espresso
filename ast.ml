@@ -118,7 +118,9 @@ let string_of_formal = function
         Formal(t, name) -> (string_of_datatype t) ^ " " ^ name
     |   _               -> ""
 
-
+let string_of_formal_name = function 
+        Formal(t, name) -> name
+    |   _ -> ""
 
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
