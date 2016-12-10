@@ -403,12 +403,13 @@ and check_unop env op expr =
 
 (* semantic check for array element access. Supporting only 1D arrays now *)
 and check_array_access env id expr = 
+	let sid,_ = get_sexpr_from_expr env id in
 	let sexpr, _ = get_sexpr_from_expr env expr in
 	let type_sexpr = get_type_from_sexpr sexpr in match type_sexpr with
 		Datatype(Int) -> (* check if id was declared as an array type *)
-						(let type_id = get_id_data_type env id in match type_id with 
-							ArrayType(t, _) -> SArrayAccess(id, sexpr, Datatype(t))
-						|	_ -> raise(Failure(" identifier " ^ id ^ " does not belong to an ArrayType "))
+						(let type_id = get_type_from_sexpr sid in match type_id with 
+							ArrayType(t, _) -> SArrayAccess(sid, sexpr, Datatype(t))
+						|	_ -> raise(Failure(" identifier " ^ string_of_expr id ^ " does not belong to an ArrayType "))
 						)
 	|	_ -> raise(Failure(" array index must be an integer "))
 

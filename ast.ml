@@ -24,7 +24,7 @@ type expr =
   | Unop of uop * expr
   | Assign of expr * expr
   | Call of string * expr list
-  | ArrayAccess of string * expr
+  | ArrayAccess of expr * expr
   | HashmapAccess of string * expr
   | ObjectAccess of expr * expr
   | Noexpr
@@ -132,7 +132,7 @@ let rec string_of_expr = function
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | Assign(e1, e2) -> string_of_expr e1 ^ " = " ^ string_of_expr e2
-  | ArrayAccess(v, e) -> v ^ "[" ^ string_of_expr e ^ "]"
+  | ArrayAccess(v, e) -> string_of_expr v ^ "[" ^ string_of_expr e ^ "]"
   | HashmapAccess(v, e) -> v ^ "<" ^ string_of_expr e ^ ">"
   | ObjectAccess(e1, e2) -> string_of_expr e1 ^ "." ^ string_of_expr e2
   | Call(f, el) ->

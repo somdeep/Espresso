@@ -11,7 +11,7 @@ type sexpr =
   | SUnop of uop * sexpr * typ
   | SAssign of sexpr * sexpr * typ
   | SCall of string * sexpr list * typ
-  | SArrayAccess of string * sexpr * typ
+  | SArrayAccess of sexpr * sexpr * typ
   | SHashmapAccess of string * sexpr * typ
   | SObjectAccess of sexpr * sexpr * typ
   | SNoexpr
