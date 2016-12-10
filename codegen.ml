@@ -55,8 +55,8 @@ let rec string_gen llbuilder s =
 (*Recursively return pointer type for array based on size*)
 let rec get_ptr_type dt = match dt with
     A.ArrayType(t,0) -> get_llvm_type (A.Datatype(t))
-  | A.ArrayType(t,1)  -> L.pointer_type (get_llvm_type (A.Datatype(t)))
-  | A.ArrayType(t,i)  -> L.pointer_type (get_llvm_type (A.ArrayType(t,i-1)))
+  | A.ArrayType(t,i)  -> L.pointer_type (get_llvm_type (A.Datatype(t)))
+  (*| A.ArrayType(t,i)  -> L.pointer_type (get_ptr_type (A.ArrayType(t,i-1)))*)
   | _ -> raise (Failure ("Invalid Array Pointer Type"))
 
 (*return corresponding llvm types for Ast datatype - get_type*)
@@ -67,8 +67,8 @@ and get_llvm_type (dt : A.typ) = match dt with
 | A.Datatype(Char)  ->  i8_t
 | A.Datatype(Void)  ->  void_t
 | A.Datatype(String)  -> str_t
-| Datatype(ObjTyp(name))  ->  L.pointer_type(find_class name)
-| ArrayType(prim,i) ->  get_ptr_type (ArrayType(prim,(i)))
+| A.Datatype(ObjTyp(name))  ->  L.pointer_type(find_class name)
+| A.ArrayType(prim,i) ->  get_ptr_type (A.ArrayType(prim,(i)))
 | _ -> raise (Failure ("llvm type not yet supported"))
 
 
@@ -152,12 +152,12 @@ and assign_gen llbuilder lhs rhs dt =
   (*code generation for the lhs expression*)
   let lhs, isObjacc = match lhs with
   | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false,false
-  | SArrayAccess(st,exp,dt) -> raise (Failure ("yet to add"))
+  | SArrayAccess(st,exp,dt) -> array_access_gen llbuilder st exp dt true, false
   | _ ->  raise (Failure ("LHS of an assignment must be stand-alone"))
   in
 
   let rhs = match rhs with
-  | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false
+  | Sast.SId(id,dt) ->  id_gen llbuilder id dt true false
   | Sast.SObjectAccess(_,_,_) ->  raise(Failure ("Yet to add object access to assign codegen"))
   | _ ->  sexpr_gen llbuilder rhs
   in
@@ -175,6 +175,82 @@ and assign_gen llbuilder lhs rhs dt =
   ignore(L.build_store rhs lhs llbuilder);
   rhs
 
+
+(*Code generation for array access*)
+and array_access_gen llbuilder st exp dt isAssign = 
+  let index = sexpr_gen llbuilder exp in
+  let index = match dt with 
+    A.Datatype(Char)  -> index
+  | _ -> L.build_add index (L.const_int i32_t 1) "tmp" llbuilder 
+  in
+  (*let  arr = id_gen llbuilder st dt true false in*)
+  let arr = sexpr_gen llbuilder st in
+  (*ignore(raise (Failure (L.string_of_llvalue index))); *)
+  let _val = L.build_gep arr [| index |] "tmp" llbuilder in 
+  if isAssign 
+    then _val
+    else L.build_load _val "tmp" llbuilder
+
+
+(*Codegen for initialising an array*)
+and array_init llbuilder arr arr_len init_val start_pos =
+  let new_block label = 
+    let f = L.block_parent (L.insertion_block llbuilder) in
+    L.append_block (L.global_context ()) label f
+  in
+
+  let bbcurr = L.insertion_block llbuilder in
+  let bbcond = new_block "array.cond" in
+  let bbbody = new_block "array.init" in
+  let bbdone = new_block "array.done" in
+  ignore(L.build_br bbcond llbuilder);
+  L.position_at_end bbcond llbuilder;
+
+  (*manage counter for length of array*)
+  let counter = L.build_phi [L.const_int i32_t start_pos, bbcurr] "counter" llbuilder in
+  L.add_incoming ((L.build_add counter (L.const_int i32_t 1) "tmp"  llbuilder), bbbody) counter;
+  let cmp = L.build_icmp L.Icmp.Slt counter arr_len "tmp" llbuilder in
+  ignore(L.build_cond_br cmp bbbody bbdone llbuilder);
+  L.position_at_end bbbody llbuilder;
+
+  (*Assign array position to init_val*)
+  let arr_ptr = L.build_gep arr [| counter |] "tmp" llbuilder in
+  ignore  (L.build_store init_val arr_ptr llbuilder);
+  ignore  (L.build_br bbcond llbuilder);
+  L.position_at_end bbdone llbuilder
+
+
+
+(*Code generation for array creation, allocating space for the array*)
+and array_create_gen llbuilder t exp_t el = 
+  match exp_t with 
+    A.ArrayType(A.Char,_) ->
+      let e = el in 
+      let size = (sexpr_gen llbuilder (SLiteral(e))) in
+      let t = get_llvm_type t in
+      let arr = L.build_array_malloc t size "tmp" llbuilder in
+      let arr = L.build_pointercast arr (L.pointer_type t) "tmp" llbuilder in
+      arr
+  | _ ->
+    let e = el in
+    let t = get_llvm_type t in 
+    let size = (sexpr_gen llbuilder (SLiteral(e))) in
+    let size_t = L.build_intcast (L.size_of t) i32_t "tmp" llbuilder in
+    let size = L.build_mul size_t size "tmp" llbuilder in
+    let size_real = L.build_add size (L.const_int i32_t 1) "arr_size" llbuilder in 
+
+    let  arr = L.build_array_malloc t size_real "tmp" llbuilder in 
+    let  arr = L.build_pointercast arr (L.pointer_type t) "tmp" llbuilder in
+
+    (*let arr_len_ptr = L.build_pointercast arr (L.pointer_type i32_t) "tmp" llbuilder in
+
+    (*Store the length of the array*)
+    ignore(L.build_store size_real arr_len_ptr llbuilder);
+    array_init llbuilder arr_len_ptr  size_real (L.const_int i32_t 0) 0;*)
+    arr
+
+
+
 (*Code generation for an expression*)
 and sexpr_gen llbuilder = function
     SLiteral(i) ->  L.const_int i32_t i
@@ -186,6 +262,7 @@ and sexpr_gen llbuilder = function
   | SBinop(expr1, op, expr2, dt) -> binop_gen llbuilder expr1 op expr2 dt 
   | SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt
   | SCall(name, expr_list, dt) -> call_gen llbuilder name expr_list dt
+  | SArrayAccess(name,exp,dt) ->  array_access_gen llbuilder name exp dt false
   | _ -> raise (Failure "Not supported in codegen yet")
 
 and call_gen  llbuilder func_name expr_list dt = match func_name with
@@ -205,7 +282,7 @@ and print_gen llbuilder expr_list =
     let params = List.map (fun expr -> sexpr_gen llbuilder expr) expr_list in
     let param_types = List.map (Semant.get_type_from_sexpr) expr_list in
     let get_format_string dt = match dt with
-    	A.ArrayType(Char, 1) 	-> "%s"
+    	A.ArrayType(Char, _) 	-> "%s"
 		| 	A.Datatype(Int) 		-> "%d"
 		| 	A.Datatype(Float) 	-> "%f"
 		| 	A.Datatype(String) 	-> "%s"
@@ -325,6 +402,8 @@ and return_gen llbuilder exp typ =
 and local_gen llbuilder dt st  =
   let t = match dt with
           A.Datatype(A.ObjTyp(name)) -> find_class name
+        (*| A.ArrayType(A.(),i) ->  array_create_gen llbuilder prim i st*)
+        | A.ArrayType(prim,len)  ->  ignore (array_create_gen llbuilder (A.Datatype(prim)) dt len); get_llvm_type dt
         | _ -> get_llvm_type dt
   in
 

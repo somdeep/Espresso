@@ -1,0 +1,3 @@
+llc array.ll -march=x86-64 -o array.s
+mpicc -O0 array.s -o array
+./array
