@@ -112,6 +112,9 @@ let string_of_vdecl (var_decl) = match var_decl with
     Vdecl (t, id) -> string_of_datatype t ^ " " ^ id ^ ";\n"
 
 
+let string_of_object = function
+		Datatype(ObjTyp(s))	-> s
+	| 	_ -> ""
 
 (* Helper function to pretty print formal arguments *)
 let string_of_formal = function

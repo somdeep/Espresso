@@ -147,6 +147,45 @@ and binop_gen llbuilder expr1 op expr2 dt =
   match_types dt
 
 
+(*Code generation for Object Access*)
+and obj_access_gen llbuilder lhs rhs d isAssign =
+
+  let check_lhs lhs = 
+    match lhs with
+      SId(s,d)  ->  id_gen llbuilder s d false false
+    | SArrayAccess(_,_,_)  ->  raise (Failure ("yet to do : array as lhs of object invocation"))
+    | _ -> raise (Failure ("LHS of object access must be object")) 
+
+  in 
+  
+  let rec check_rhs isAssign par_exp par_type rhs= 
+    let par_str = A.string_of_object par_type in 
+    match rhs with 
+
+      SId(field,d)  ->
+        let search_t = (par_str ^ "." ^ field) in 
+        let field_index = Hash.find class_field_indexes search_t in
+        let _val = L.build_struct_gep par_exp field_index field llbuilder in 
+        let _val = match d with 
+          Datatype(ObjTyp(_)) ->
+            if not isAssign then _val
+            else L.build_load _val field llbuilder
+          | _ ->  
+            if not isAssign then _val
+            else L.build_load _val field llbuilder
+        in
+        _val  
+    | _ ->  raise(Failure ("yet to do : rhs types in object access codegen"))
+  in
+
+  let lhs_type = Sem.get_type_from_sexpr lhs in 
+  (*yet to do : treating arrays as objects? for length*)
+
+  let lhs = check_lhs lhs in 
+  let rhs = check_rhs isAssign lhs lhs_type rhs in
+  rhs
+
+(*Code generation for assign*)
 and assign_gen llbuilder lhs rhs dt = 
   let rhs_type = Sem.get_type_from_sexpr rhs in
 
@@ -154,17 +193,20 @@ and assign_gen llbuilder lhs rhs dt =
   let lhs, isObjacc = match lhs with
   | Sast.SId(id,dt) ->  id_gen llbuilder id dt false false,false
   | SArrayAccess(st,exp,dt) -> array_access_gen llbuilder st exp dt true, false
+  | SObjectAccess(se, sel, d) -> obj_access_gen llbuilder se sel d false,true
   | _ ->  raise (Failure ("LHS of an assignment must be stand-alone"))
   in
 
   let rhs = match rhs with
   | Sast.SId(id,dt) ->  id_gen llbuilder id dt true false
-  | Sast.SObjectAccess(_,_,_) ->  raise(Failure ("Yet to add object access to assign codegen"))
+  | Sast.SObjectAccess(e1,e2,d) ->  obj_access_gen llbuilder e1 e2 d true
   | _ ->  sexpr_gen llbuilder rhs
   in
 
   let rhs = match dt with 
-    A.Datatype(ObjTyp(_)) ->  raise (Failure ("yet to add to codegen"))
+    A.Datatype(ObjTyp(_)) ->  
+      if isObjacc then rhs
+      else L.build_load rhs "tmp" llbuilder
   | _ ->  rhs
   in
   let rhs = match dt,rhs_type with
@@ -175,6 +217,7 @@ and assign_gen llbuilder lhs rhs dt =
 
   ignore(L.build_store rhs lhs llbuilder);
   rhs
+
 
 
 (*Code generation for array access*)
@@ -264,6 +307,7 @@ and sexpr_gen llbuilder = function
   | SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt
   | SCall(name, expr_list, dt) -> call_gen llbuilder name expr_list dt
   | SArrayAccess(name,exp,dt) ->  array_access_gen llbuilder name exp dt false
+  |SObjectAccess(e1,e2,d) ->  obj_access_gen llbuilder e1 e2 d true
   | _ -> raise (Failure "Not supported in codegen yet")
 
 and call_gen  llbuilder func_name expr_list dt = match func_name with
