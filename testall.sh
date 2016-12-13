@@ -16,6 +16,7 @@ MICROC="./microc.native"
 
 # Set time limit for all operations
 ulimit -t 30
+TMP_DIR="_tmp"
 
 globallog=testall.log
 rm -f $globallog
@@ -84,15 +85,21 @@ Check() {
     echo "###### Testing $basename" 1>&2
 
     generatedfiles=""
-    generatedfiles="$generatedfiles ${basename}.ll ${basename}.out ${basename}.before ${basename}.before1 ${basename}.after ${basename}.after1" &&
-    Run "$MICROC" "-a <" $1 ">" "${basename}.ll" &&
+    generatedfiles="$generatedfiles ${TMP_DIR}/${basename}.ll ${TMP_DIR}/${basename}.out ${TMP_DIR}/${basename}.before ${TMP_DIR}/${basename}.after " &&
+    Run "$MICROC" "-a <" $1 ">" "${TMP_DIR}/${basename}.ll" &&
 #    Run "$LLI" "${basename}.ll" ">" "${basename}.out" &&
 #    Compare ${basename}.out ${reffile}.out ${basename}.diff
-    tr -d "\n" < ${basename}.ll > ${basename}.after1
-    tr -d " "  < ${basename}.after1 > ${basename}.after
-    tr -d "\n" < $1 > ${basename}.before1
-    tr -d " "  < ${basename}.before1 > ${basename}.before  
-    Compare ${basename}.after ${basename}.after ${basename}.diff
+    tr -d "\n" < ${TMP_DIR}/${basename}.ll > ${TMP_DIR}/${basename}.after1
+    tr -d "\t" < ${TMP_DIR}/${basename}.after1 > ${TMP_DIR}/${basename}.after2
+    tr -d " "  < ${TMP_DIR}/${basename}.after2 > ${TMP_DIR}/${basename}.after
+    tr -d "\n" < $1 > ${TMP_DIR}/${basename}.before1
+    tr -d "\t"  < ${TMP_DIR}/${basename}.before1 > ${TMP_DIR}/${basename}.before2
+    tr -d " "  < ${TMP_DIR}/${basename}.before2 > ${TMP_DIR}/${basename}.before      
+    Compare ${TMP_DIR}/${basename}.before ${TMP_DIR}/${basename}.after ${TMP_DIR}/${basename}.diff
+    rm ${TMP_DIR}/${basename}.after1
+    rm ${TMP_DIR}/${basename}.after2
+    rm ${TMP_DIR}/${basename}.before1
+    rm ${TMP_DIR}/${basename}.before2
     # Report the status and clean up the generated files
 
     if [ $error -eq 0 ] ; then
