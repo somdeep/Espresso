@@ -5,7 +5,7 @@ open Ast
 %}
 
 %token CLASS
-%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON DOT
+%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON DOT THIS
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK HASHMAP
@@ -141,6 +141,7 @@ expr:
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
+  | THIS             { This }
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }
   | expr TIMES  expr { Binop($1, Mult,  $3) }
