@@ -36,6 +36,8 @@ type sfunc_decl = {
     sformals : formal list;
     sbody : sstmt list;
     sftype : ftype;
+    scontext_class :  string;
+    sthis_ptr : sexpr;
   }
 
 

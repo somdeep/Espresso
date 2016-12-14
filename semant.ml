@@ -75,6 +75,8 @@ let get_reserved_funcs =
 			sformals 		= formals;
 			sbody 			= [];
 			sftype		    = Sast.Reserved;
+			scontext_class  = "Nil"; 
+			sthis_ptr       = SId("Nil",Datatype(ObjTyp("Nil")))
 		}
 	in
     let reserved_functions = [
@@ -140,6 +142,7 @@ let rec get_sexpr_from_expr env expr = match expr with
     |   BoolLit b -> SBoolLit(b), env
     |   Charlit c -> SCharlit(c), env
 	|	Id id -> SId(id, (get_id_data_type env id)), env
+	|   This  -> SId(env.env_name ^ "_this", Datatype(ObjTyp(env.env_name))), env
 	| 	Assign(expr1, expr2) -> check_assignment env expr1 expr2, env
 	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
 	|	Unop(op, expr) -> check_unop env op expr, env
@@ -433,6 +436,7 @@ and check_object_access env expr1 expr2 =
 	(* verify that the invoking object is a valid identifier *)
 	let check_obj_id expr = match expr with 
 		Id obj -> SId(obj, get_id_data_type env obj) 
+	|	This -> SId(env.env_name ^ "_this", Datatype(ObjTyp(env.env_name)))
 	|	ArrayAccess(id, expr) -> check_array_access env id expr
 	in
 	
@@ -583,7 +587,8 @@ let convert_fdecl_to_sfdecl class_maps reserved class_map cname fdecl =
 			Formal(data_type, formal_name) -> (StringMap.add formal_name formal_node m) 
 		| 	_ -> m
 	in
-	let env_params = List.fold_left get_params_map StringMap.empty fdecl.formals in
+	let this_ptr = Formal(Datatype(ObjTyp(cname)), "this") in
+	let env_params = List.fold_left get_params_map StringMap.empty (this_ptr :: fdecl.formals) in
     let env = {
 		env_class_maps 	= class_maps;
 		env_class_map = class_map;
@@ -607,6 +612,8 @@ let convert_fdecl_to_sfdecl class_maps reserved class_map cname fdecl =
 		sformals    = fdecl.formals;
 		sbody 		= fbody;
 		sftype		= Sast.Udf;
+		scontext_class = cname;
+		sthis_ptr = SId("this", Datatype(ObjTyp(cname)));
 	}
 
 	

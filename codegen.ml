@@ -26,6 +26,8 @@ let values:(string, L.llvalue) Hash.t = Hash.create 50
 let params:(string, L.llvalue) Hash.t = Hash.create 50
 let class_types:(string, L.lltype) Hash.t = Hash.create 10
 let class_field_indexes:(string, int) Hash.t = Hash.create 50
+let class_fields:(string, L.llvalue) Hash.t = Hash.create 50
+
 
 
 let context = L.global_context ()
@@ -39,7 +41,6 @@ let i1_t = L.i1_type context;;
 let str_t = L.pointer_type i8_t;;
 let i64_t = L.i64_type context;;
 let void_t = L.void_type context;;
-
 
 let is_loop = ref false
 
@@ -81,11 +82,13 @@ and find_class name =
 let rec id_gen llbuilder id dt isderef checkparam =
   if isderef then
     try 
-      Hash.find params id
+      (* try parameters *)
+        Hash.find params id
     with | Not_found ->
-    try let _val = Hash.find values id in
-    L.build_load _val id llbuilder
-    with | Not_found -> raise (Failure ("Unknown variable " ^ id))
+      (* try local variables *)
+      try let _val = Hash.find values id in
+      L.build_load _val id llbuilder
+      with Not_found -> raise (Failure ("Unknown variable there " ^ id))
   else
     try Hash.find values id
     with | Not_found ->
@@ -93,7 +96,7 @@ let rec id_gen llbuilder id dt isderef checkparam =
         let _val = Hash.find params id in
         if checkparam then raise (Failure ("Cannot assign to a parameter"))
         else _val
-    with | Not_found -> raise (Failure ("Unknown variable " ^ id)) 
+    with | Not_found -> raise (Failure ("Unknown variable here " ^ id)) 
 
 and binop_gen llbuilder expr1 op expr2 dt = 
   let le1 = sexpr_gen llbuilder expr1 in
@@ -153,12 +156,13 @@ and obj_access_gen llbuilder lhs rhs d isAssign =
   let check_lhs lhs = 
     match lhs with
       SId(s,d)  ->  id_gen llbuilder s d false false
+    
     | SArrayAccess(_,_,_)  ->  raise (Failure ("yet to do : array as lhs of object invocation"))
     | _ -> raise (Failure ("LHS of object access must be object")) 
 
   in 
   
-  let rec check_rhs isAssign par_exp par_type rhs= 
+  let rec check_rhs isLHS par_exp par_type rhs= 
     let par_str = A.string_of_object par_type in 
     match rhs with 
 
@@ -174,7 +178,13 @@ and obj_access_gen llbuilder lhs rhs d isAssign =
             if not isAssign then _val
             else L.build_load _val field llbuilder
         in
-        _val  
+        _val
+    | SCall(func_name, expr_list, ftype) ->   call_gen llbuilder func_name expr_list ftype
+    (*| SObjectAccess(obj_name, exp, dt) -> 
+            let obj_typ = Semant.get_type_from_sexpr obj_name in
+            let obj_val = check_rhs isAssign par_exp par_type obj_name in
+            let mem_val = check_rhs isAssign obj_name obj_typ exp in
+            mem_val *)
     | _ ->  raise(Failure ("yet to do : rhs types in object access codegen"))
   in
 
@@ -182,7 +192,7 @@ and obj_access_gen llbuilder lhs rhs d isAssign =
   (*yet to do : treating arrays as objects? for length*)
 
   let lhs = check_lhs lhs in 
-  let rhs = check_rhs isAssign lhs lhs_type rhs in
+  let rhs = check_rhs true lhs lhs_type rhs in
   rhs
 
 (*Code generation for assign*)
@@ -307,7 +317,7 @@ and sexpr_gen llbuilder = function
   | SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt
   | SCall(name, expr_list, dt) -> call_gen llbuilder name expr_list dt
   | SArrayAccess(name,exp,dt) ->  array_access_gen llbuilder name exp dt false
-  |SObjectAccess(e1,e2,d) ->  obj_access_gen llbuilder e1 e2 d true
+  | SObjectAccess(e1,e2,d) ->  obj_access_gen llbuilder e1 e2 d true
   | _ -> raise (Failure "Not supported in codegen yet")
 
 and call_gen  llbuilder func_name expr_list dt = match func_name with
@@ -500,8 +510,15 @@ let func_body_gen sfunc_decl =
   (* this generates the entry point *)
   let llbuilder = L.builder_at_end context (L.entry_block func) in
   let _ = init_params func sfunc_decl.sformals in
+
+  (* initialize this pointer *)  
+  let this_type = A.Datatype(A.ObjTyp(sfunc_decl.scontext_class)) in
+  let this_name = (sfunc_decl.scontext_class ^ "_this" ) in
   
-  let _ = stmt_gen llbuilder (SBlock(sfunc_decl.sbody)) in
+  let init_this = [SLocal(this_type, this_name)] in
+  
+  (* initialize this object as the first statement in the body *)
+  let _ = stmt_gen llbuilder (SBlock(init_this @ sfunc_decl.sbody)) in
   if sfunc_decl.styp = Datatype(Void) 
 		then ignore(L.build_ret_void llbuilder);
 	()
@@ -522,9 +539,9 @@ let class_gen s =
   let name_list = ".key" :: name_list in
 
   let type_array = (Array.of_list type_list) in
-  List.iteri (fun typ name -> 
+  List.iteri (fun i name -> 
     let n = s.scname ^ "." ^ name in
-    Hash.add class_field_indexes n typ; 
+    Hash.add class_field_indexes n i; 
   ) name_list;
   L.struct_set_body class_type type_array true
 
@@ -536,8 +553,13 @@ let main_gen main =
   let ftype = L.function_type i32_t [||] in
   let func = L.define_function "main" ftype the_module in 
   let llbuilder = L.builder_at_end context (L.entry_block func) in
+
+  (* initialize this pointer *)  
+  let this_type = A.Datatype(A.ObjTyp(main.scontext_class)) in
+  let this_name = (main.scontext_class ^ "_this" ) in
   
-  let _ = stmt_gen llbuilder (SBlock(main.sbody)) in
+  let init_this = [SLocal(this_type, this_name)] in
+  let _ = stmt_gen llbuilder (SBlock(init_this @ main.sbody)) in
   L.build_ret (L.const_int i32_t 0) llbuilder
 
 (* declare library functions *)

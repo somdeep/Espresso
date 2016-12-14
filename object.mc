@@ -1,38 +1,47 @@
 
 class work
 {
-	int a;	
+	int a;
+
+	int test() {
+	    return 100;
+	}
+	
 	void main()
 	{
 		
 		int b;
 		int c;
 		int d;
-		String disp;
-		disp="disp";
-		b=2;
-		print_string("Hello World\n");
-		class animal obj;
-		obj.i = 10;
-		obj.b = 'a';
-		int x;
-		x=obj.i; 
-		print_int(obj.i);
-		print_int(x);
+		class animal an;
+		this.a = test();
+		String msg;
+		msg = "this.a=";
+		print_string(msg);
+		print_int(this.a);
+		print_string("\n");
+		
+		an.i = 5;
+		this.a = an.perform(an.i);
+		msg = "value from perform=";
+		print_string(msg);
+		print_int(this.a);
 		print_string("\n");
 	}
 }
+
+
 class animal
 {
 	char b;
 	bool x;
 	int i;
 	
-	int perform()
+	int perform(int x)
 	{
-		int i;
-		i = 1 + i;
-		return i*2;
+		this.i = x + this.i;
+		return this.i*2;
 	}
 }
-	
+
+
