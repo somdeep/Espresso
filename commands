@@ -1,3 +1,3 @@
-llc array.ll -march=x86-64 -o array.s
-mpicc -O0 array.s -o array
-./array
+llc objarray.ll -march=x86-64 -o objarray.s
+mpicc -O0 objarray.s -o objarray
+./objarray
