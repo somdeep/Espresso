@@ -17,7 +17,7 @@ MICROC="./microc.native"
 # Set time limit for all operations
 ulimit -t 30
 TMP_DIR="_tmp"
-
+rm ${TMP_DIR}/*.*
 globallog=testall.log
 rm -f $globallog
 error=0

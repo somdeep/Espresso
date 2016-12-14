@@ -5,8 +5,11 @@ int main(int a) {
     int y;
     x = 1;
     y = 2;
-    int z;
-    z = x+y;
+    bool z;
+    if(x == 1 && y ==2)
+    	z = true;
+    else
+    	z = false; 
     return 0;
    }
 }

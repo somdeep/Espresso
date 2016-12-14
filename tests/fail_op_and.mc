@@ -5,8 +5,8 @@ int main(int a) {
     int y;
     x = 1;
     y = 2;
-    int z;
-    z = x+y;
+    bool z;
+	z = x && y; 
     return 0;
    }
 }
