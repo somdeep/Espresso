@@ -180,6 +180,13 @@ and obj_access_gen llbuilder lhs rhs d isAssign =
         in
         _val
     | SCall(func_name, expr_list, ftype) ->   call_gen llbuilder func_name expr_list ftype
+    
+    | SObjectAccess(e1, e2, d)  ->
+        let e1_type = Sem.get_type_from_sexpr e1 in 
+        let e1 = check_rhs true par_exp par_type e1 in 
+        let e2 = check_rhs true e1 e1_type e2 in
+        e2        
+
     (*| SObjectAccess(obj_name, exp, dt) -> 
             let obj_typ = Semant.get_type_from_sexpr obj_name in
             let obj_val = check_rhs isAssign par_exp par_type obj_name in
@@ -452,6 +459,12 @@ and for_gen llbuilder init_st cond_st inc_st body_st =
 
   L.const_null f_t
 
+(*Code generation for a while statement*)
+and while_gen llbuilder cond_ body_ =
+  let null_se = SLiteral(0) in
+  for_gen llbuilder null_se cond_ null_se body_ 
+
+  
 (*Code generation for a return statement*)
 and return_gen llbuilder exp typ =
   match exp with 
@@ -479,6 +492,7 @@ and stmt_gen llbuilder = function
 | SReturn(exp,typ) -> return_gen llbuilder exp typ
 | SIf(exp,st1,st2)  ->  if_stmt_gen llbuilder exp st1 st2
 | SFor(exp1,exp2,exp3,st) ->  for_gen llbuilder exp1 exp2 exp3 st
+| SWhile(e,s) ->  while_gen llbuilder e s
 | SLocal(dt,st) ->  local_gen llbuilder dt st
 |  _ -> raise (Failure ("unknown statement"))
   
