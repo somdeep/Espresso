@@ -5,7 +5,7 @@ open Ast
 %}
 
 %token CLASS
-%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON DOT THIS
+%token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON DOT THIS POUND
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK HASHMAP LAMBDA
@@ -16,7 +16,7 @@ open Ast
 %token <float> FLOATLIT
 %token EOF
 
-%nonassoc NOELSE
+%nonassoc NOELSE POUND
 %nonassoc ELSE LSQUARE
 %right ASSIGN
 %left OR
@@ -161,6 +161,7 @@ expr:
   | NOT expr         { Unop(Not, $2) }
   | expr ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
+  | POUND ID LPAREN actuals_opt RPAREN { LambdaCall($2, $4) }
   | LPAREN expr RPAREN { $2 }
   | expr LSQUARE expr RSQUARE { ArrayAccess($1, $3) }
   | ID LBRACE expr RBRACE { HashmapAccess($1, $3) }

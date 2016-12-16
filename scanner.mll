@@ -31,6 +31,7 @@ rule token = parse
 | '='      { ASSIGN }
 | '%'	   { MODULUS }
 | '.'     { DOT }
+| '#'     { POUND }
 | "**"	   { POWER }
 | "=="     { EQ }
 | "!="     { NEQ }

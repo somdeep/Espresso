@@ -15,6 +15,8 @@ let is_lambda = ref false
 let lambda_count = ref 0
 let lambda_funcs = ref [] ;;
 
+let lambda_func_map = ref StringMap.empty ;;
+
 type env = {
 	env_class_maps: classMap StringMap.t;
 	env_class_map : classMap;
@@ -153,6 +155,7 @@ let rec get_sexpr_from_expr env expr = match expr with
 	|	HashmapAccess(id, expr) -> check_hashmap_access env id expr, env
 	|	ObjectAccess(expr1, expr2) -> check_object_access env expr1 expr2, env
 	|	Call(func_name, expr_list) -> check_call env func_name expr_list, env
+	| 	LambdaCall(func_name, expr_list) -> check_lambda_call env func_name expr_list, env
 	| 	Noexpr	->	SNoexpr, env
 
 	
@@ -492,44 +495,78 @@ and check_object_access env expr1 expr2 =
 	
 (* check function call semantics *)
 (* pass invoking object's environment in env if this is invoked by an object *)
-and check_call env func_name expr_list =
+and check_call env func_name expr_list = match env.env_name with
 	(* get class in corresponding env *)
-	let context_class_map = try StringMap.find env.env_name env.env_class_maps with
-		|	Not_found -> raise (Failure ("class was not found in the context of this function call "))
-	in
-	let sexpr_list, _ = get_sexprl_from_exprl env expr_list in
-	(* check a given formal and actual parameter *)
-	let get_actual_param formal_param param = 
-		let formal_type = match formal_param with Formal(t, _) -> t | _ -> Datatype(Void) in
-		let param_type = get_type_from_sexpr param in
-		if formal_type = param_type 
-			then param
-			else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
-	in
+	"Lambda" -> 
+		 ( 
+			let sexpr_list, _ = get_sexprl_from_exprl env expr_list in
+			(* check a given formal and actual parameter *)
+			let get_actual_param formal_param param = 
+				let formal_type = match formal_param with Formal(t, _) -> t | _ -> Datatype(Void) in
+				let param_type = get_type_from_sexpr param in
+				if formal_type = param_type 
+					then param
+					else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
+			in
 
-	(* check lengths of formal and passed parameters and get actual parameters *)
-	let get_actual_params formal_params params = 
-		let formal_len = List.length formal_params in
-		let param_len = List.length params in
-			if formal_len = param_len
-				then List.map2 get_actual_param formal_params params
-				else raise(Failure(" formal and actual parameters have unequal lengths "))
-	in
+			(* check lengths of formal and passed parameters and get actual parameters *)
+			let get_actual_params formal_params params = 
+				let formal_len = List.length formal_params in
+				let param_len = List.length params in
+					if formal_len = param_len
+						then List.map2 get_actual_param formal_params params
+						else raise(Failure(" formal and actual parameters have unequal lengths "))
+			in
 
-	let func_full_name = env.env_name ^ "." ^ func_name in
-	(* look for the function in the list of reserved functions. If it is not found there
-		look at the list of member functions of the context_class *)
-	try let func_handle = StringMap.find func_name context_class_map.reserved_func_map in
-		let actuals_list = get_actual_params func_handle.sformals sexpr_list in
-		SCall(func_name, actuals_list, func_handle.styp) with
-	|	Not_found ->
-		(* search the list of member functions *)
-		try let func_handle = StringMap.find func_full_name context_class_map.func_map in
-			let actuals_list = get_actual_params func_handle.formals sexpr_list in
-			SCall(func_full_name, actuals_list, func_handle.typ) with
-		|	Not_found -> raise(Failure("function " ^ func_name ^ " was not found "))
+			(* get the actual lambda prototype from the map *)
+			let func_handle = StringMap.find func_name !lambda_func_map in
+			let actuals_list = get_actual_params func_handle.sformals sexpr_list in
 
+			SCall(func_handle.sfname, actuals_list, func_handle.styp)
+		)
+	| _ -> 
+		 (
+			let context_class_map = try StringMap.find env.env_name env.env_class_maps with
+				|	Not_found -> raise (Failure ("class " ^ env.env_name ^ " was not found in the context of this function call " ^ func_name ))
+			in
+			let sexpr_list, _ = get_sexprl_from_exprl env expr_list in
+			(* check a given formal and actual parameter *)
+			let get_actual_param formal_param param = 
+				let formal_type = match formal_param with Formal(t, _) -> t | _ -> Datatype(Void) in
+				let param_type = get_type_from_sexpr param in
+				if formal_type = param_type 
+					then param
+					else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
+			in
 
+			(* check lengths of formal and passed parameters and get actual parameters *)
+			let get_actual_params formal_params params = 
+				let formal_len = List.length formal_params in
+				let param_len = List.length params in
+					if formal_len = param_len
+						then List.map2 get_actual_param formal_params params
+						else raise(Failure(" formal and actual parameters have unequal lengths "))
+			in
+
+			let func_full_name = env.env_name ^ "." ^ func_name in
+			(* look for the function in the list of reserved functions. If it is not found there
+				look at the list of member functions of the context_class *)
+			try let func_handle = StringMap.find func_name context_class_map.reserved_func_map in
+				let actuals_list = get_actual_params func_handle.sformals sexpr_list in
+				SCall(func_name, actuals_list, func_handle.styp) with
+			|	Not_found ->
+				(* search the list of member functions *)
+				try let func_handle = StringMap.find func_full_name context_class_map.func_map in
+					let actuals_list = get_actual_params func_handle.formals sexpr_list in
+					SCall(func_full_name, actuals_list, func_handle.typ) with
+				|	Not_found -> raise(Failure("function " ^ func_name ^ " was not found "))
+	)
+
+and check_lambda_call env func_name expr_list = 
+	let lambda_obj = Id("lambda_obj") in
+	(* actual lambda name is retrieved from the map in check_call *)
+	let lambda_call = Call(func_name, expr_list) in
+	check_object_access env lambda_obj lambda_call 
 
 
 (*semantic check for lambda functions*)
@@ -624,6 +661,9 @@ and check_lambda env id formals st =
 					scontext_class =  "Lambda";
 					sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
 				} in
+				(* add the lambda to a lambda_func_map keyed by it's name. 
+					This is why the name must be unique *)
+				lambda_func_map := StringMap.add id lambda_sfdecl !lambda_func_map ;
 				(* add this lambda to the global list of lambda functions *)
 				lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
 				SLambda(
@@ -668,16 +708,19 @@ and convert_stmt_list_to_sstmt_list env stmt_list =
 	sstmts
 
 
-and get_id_data_type env id = 
+and get_id_data_type env id = match id with
 	(* search local variables *)
-	try StringMap.find id env.env_locals
-	with | Not_found -> (* search function arguments *)
-	try let param = StringMap.find id env.env_parameters in
-		(function Formal(t, _) -> t) param
-	with | Not_found -> (* search field members *)
-	try let var_decl = StringMap.find id env.env_class_map.field_map in
-		(function Vdecl(t, _) -> t) var_decl
-	with | Not_found -> raise (Failure ("undefined identifier " ^ id))
+		"lambda_obj" -> Datatype(ObjTyp("Lambda"))
+	| _ -> (
+		try StringMap.find id env.env_locals
+		with | Not_found -> (* search function arguments *)
+		try let param = StringMap.find id env.env_parameters in
+			(function Formal(t, _) -> t) param
+		with | Not_found -> (* search field members *)
+		try let var_decl = StringMap.find id env.env_class_map.field_map in
+			(function Vdecl(t, _) -> t) var_decl
+		with | Not_found -> raise (Failure ("undefined identifier " ^ id))
+	)
 
 
 

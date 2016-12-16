@@ -24,6 +24,7 @@ type expr =
   | Unop of uop * expr
   | Assign of expr * expr
   | Call of string * expr list
+  | LambdaCall of string * expr list
   | ArrayAccess of expr * expr
   | HashmapAccess of string * expr
   | ObjectAccess of expr * expr
@@ -145,6 +146,8 @@ let rec string_of_expr = function
   | This -> "this"
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+  | LambdaCall(f, el) ->
+      "#" ^ f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
 
 let rec string_of_stmt = function

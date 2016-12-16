@@ -533,9 +533,13 @@ let func_body_gen sfunc_decl =
   let this_name = (sfunc_decl.scontext_class ^ "_this" ) in
   
   let init_this = [SLocal(this_type, this_name)] in
-  
-  (* initialize this object as the first statement in the body *)
-  let _ = stmt_gen llbuilder (SBlock(init_this @ sfunc_decl.sbody)) in
+
+  (* initialize Lambda object *)
+  let lambda_obj_type = A.Datatype(A.ObjTyp("Lambda")) in
+  let lambda_obj_name = "lambda_obj" in
+  let init_lambda_obj = [SLocal(lambda_obj_type, lambda_obj_name)] in
+
+  let _ = stmt_gen llbuilder (SBlock(init_this @ init_lambda_obj @ sfunc_decl.sbody)) in
   if sfunc_decl.styp = Datatype(Void) 
 		then ignore(L.build_ret_void llbuilder);
 	()
@@ -574,9 +578,14 @@ let main_gen main =
   (* initialize this pointer *)  
   let this_type = A.Datatype(A.ObjTyp(main.scontext_class)) in
   let this_name = (main.scontext_class ^ "_this" ) in
-  
   let init_this = [SLocal(this_type, this_name)] in
-  let _ = stmt_gen llbuilder (SBlock(init_this @ main.sbody)) in
+
+  (* initialize Lambda object *)
+  let lambda_obj_type = A.Datatype(A.ObjTyp("Lambda")) in
+  let lambda_obj_name = "lambda_obj" in
+  let init_lambda_obj = [SLocal(lambda_obj_type, lambda_obj_name)] in
+
+  let _ = stmt_gen llbuilder (SBlock(init_this @ init_lambda_obj @ main.sbody)) in
   L.build_ret (L.const_int i32_t 0) llbuilder
 
 (* declare library functions *)
