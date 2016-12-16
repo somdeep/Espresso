@@ -26,7 +26,7 @@ globalerror=0
 keep=0
 
 Usage() {
-    echo "Usage: testall.sh [options] [.espresso files]"
+    echo "Usage: testall.sh [options] [.es files]"
     echo "-k    Keep intermediate files"
     echo "-h    Print this help"
     exit 1
@@ -75,8 +75,8 @@ RunFail() {
 Check() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.espresso//'`
-    reffile=`echo $1 | sed 's/.espresso$//'`
+                             s/.es//'`
+    reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
     echo -n "$basename..."
@@ -117,8 +117,8 @@ Check() {
 CheckFail() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.espresso//'`
-    reffile=`echo $1 | sed 's/.espresso$//'`
+                             s/.es//'`
+    reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
     echo -n "$basename..."
@@ -172,7 +172,7 @@ if [ $# -ge 1 ]
 then
     files=$@
 else
-    files="tests/test_*.mc tests/fail_*.espresso"
+    files="tests/test_*.es tests/fail_*.es"
 fi
 
 for file in $files
