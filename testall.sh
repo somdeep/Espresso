@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Regression testing script for MicroC
+# Regression testing script for ESPRESSO
 # Step through a list of files
 #  Compile, run, and check the output of each expected-to-work test
 #  Compile and check the error of each expected-to-fail test
@@ -9,10 +9,10 @@
 LLI="lli"
 #LLI="/usr/local/opt/llvm/bin/lli"
 
-# Path to the microc compiler.  Usually "./microc.native"
-# Try "_build/microc.native" if ocamlbuild was unable to create a symbolic link.
-MICROC="./microc.native"
-#MICROC="_build/microc.native"
+# Path to the espresso compiler.  Usually "./espresso.native"
+# Try "_build/expresso.native" if ocamlbuild was unable to create a symbolic link.
+ESPRESSO="./espresso.native"
+#ESPRESSO="_build/espresso.native"
 
 # Set time limit for all operations
 ulimit -t 30
@@ -26,7 +26,7 @@ globalerror=0
 keep=0
 
 Usage() {
-    echo "Usage: testall.sh [options] [.mc files]"
+    echo "Usage: testall.sh [options] [.es files]"
     echo "-k    Keep intermediate files"
     echo "-h    Print this help"
     exit 1
@@ -75,8 +75,8 @@ RunFail() {
 Check() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.mc//'`
-    reffile=`echo $1 | sed 's/.mc$//'`
+                             s/.es//'`
+    reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
     echo -n "$basename..."
@@ -86,7 +86,7 @@ Check() {
 
     generatedfiles=""
     generatedfiles="$generatedfiles ${TMP_DIR}/${basename}.ll ${TMP_DIR}/${basename}.out ${TMP_DIR}/${basename}.before ${TMP_DIR}/${basename}.after " &&
-    Run "$MICROC" "-a <" $1 ">" "${TMP_DIR}/${basename}.ll" &&
+    Run "$ESPRESSO" "-a <" $1 ">" "${TMP_DIR}/${basename}.ll" &&
 #    Run "$LLI" "${basename}.ll" ">" "${basename}.out" &&
 #    Compare ${basename}.out ${reffile}.out ${basename}.diff
     tr -d "\n" < ${TMP_DIR}/${basename}.ll > ${TMP_DIR}/${basename}.after1
@@ -117,8 +117,8 @@ Check() {
 CheckFail() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.mc//'`
-    reffile=`echo $1 | sed 's/.mc$//'`
+                             s/.es//'`
+    reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
     echo -n "$basename..."
@@ -129,7 +129,7 @@ CheckFail() {
     generatedfiles=""
 
     generatedfiles="$generatedfiles ${basename}.err ${basename}.diff" &&
-    RunFail "$MICROC" "-a <" $1 "2>" "${basename}.err" ">>" $globallog &&
+    RunFail "$ESPRESSO" "-a <" $1 "2>" "${basename}.err" ">>" $globallog &&
     Compare ${basename}.err ${reffile}.err ${basename}.diff
 
     # Report the status and clean up the generated files
@@ -172,7 +172,7 @@ if [ $# -ge 1 ]
 then
     files=$@
 else
-    files="tests/test_*.mc tests/fail_*.mc"
+    files="tests/test_*.es tests/fail_*.es"
 fi
 
 for file in $files
