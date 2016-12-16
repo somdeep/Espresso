@@ -13,6 +13,7 @@ type classMap = {
 
 let is_lambda = ref false 
 let lambda_count = ref 0
+let lambda_funcs = ref [] ;;
 
 type env = {
 	env_class_maps: classMap StringMap.t;
@@ -612,12 +613,26 @@ and check_lambda env id formals st =
 				}
 				in
 				lambda_count := !lambda_count + 1;
+				(* generate an sfunc_decl object to transform the lamda into a function *)
+
+				let lambda_sfdecl = {
+					styp = ret_typ;
+					sfname = "lambda_" ^ (string_of_int !lambda_count);
+					sformals = formals;
+					sbody = [ sstmt ];
+					sftype = Sast.Udf;
+					scontext_class =  "Lambda";
+					sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
+				} in
+				(* add this lambda to the global list of lambda functions *)
+				lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
 				SLambda(
 					ret_typ,
 					"lambda_" ^ (string_of_int !lambda_count),
 					 formals,
 					 [ sstmt ]
 				), old_env
+				(*SExpr(SNoexpr), old_env*)
 				
 
 				
@@ -749,12 +764,22 @@ let get_sast class_maps reserved cdecls =
 	(fst scdecl :: fst t, snd scdecl @ snd t)
 	in
 	
-   
 	let scdecl_list, sfunctions_list = List.fold_left iter_cdecls ([], []) cdecls in
+
+
+	let slambda_body = {
+		 sfields = [];
+		 smethods = !lambda_funcs;
+	} in
+	let slambda_class = {
+	  	scname = "Lambda";
+	  	scbody = slambda_body;
+	} in
+   
 	let main = get_main sfunctions_list in
 	{
-		classes = scdecl_list;
-		functions = (remove_main sfunctions_list); (* Should we remove main from this ? *)
+		classes = (scdecl_list @ [slambda_class]);
+		functions = ((remove_main sfunctions_list) @ !lambda_funcs ); (* Should we remove main from this ? *)
 		main = main;
 		reserved = reserved;
 	}

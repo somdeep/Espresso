@@ -325,6 +325,8 @@ and sexpr_gen llbuilder = function
   | SCall(name, expr_list, dt) -> call_gen llbuilder name expr_list dt
   | SArrayAccess(name,exp,dt) ->  array_access_gen llbuilder name exp dt false
   | SObjectAccess(e1,e2,d) ->  obj_access_gen llbuilder e1 e2 d true
+  | SNoexpr      -> L.build_add (L.const_int i32_t 0) (L.const_int i32_t 0) "nop" llbuilder
+
   | _ -> raise (Failure "Not supported in codegen yet")
 
 and call_gen  llbuilder func_name expr_list dt = match func_name with
@@ -494,6 +496,7 @@ and stmt_gen llbuilder = function
 | SFor(exp1,exp2,exp3,st) ->  for_gen llbuilder exp1 exp2 exp3 st
 | SWhile(e,s) ->  while_gen llbuilder e s
 | SLocal(dt,st) ->  local_gen llbuilder dt st
+| SLambda(_,_,_,_) -> L.build_add (L.const_int i32_t 0) (L.const_int i32_t 0) "nop" llbuilder
 |  _ -> raise (Failure ("unknown statement"))
   
 
@@ -539,9 +542,9 @@ let func_body_gen sfunc_decl =
 
 
 (*Class stubs and class gen created here*)
-let class_stub_gen s =
-  let class_type = L.named_struct_type context s.scname in
-  Hash.add class_types s.scname class_type
+let class_stub_gen s = 
+    let class_type = L.named_struct_type context s.scname in
+    Hash.add class_types s.scname class_type
 
 let class_gen s =
   let class_type = Hash.find class_types s.scname in
