@@ -18,6 +18,7 @@ type sexpr =
 
 (*type var_decl = Vdecl of typ * string*)
 
+
 type sstmt =
     SBlock of sstmt list
   | SExpr of sexpr * typ
@@ -26,10 +27,13 @@ type sstmt =
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
   | SForeach of typ * string * string * sstmt
+  | SLambda of typ * string * formal list * sstmt list
   | SBreak
   | SLocal of typ * string
   
 type ftype = Reserved | Udf
+
+
 type sfunc_decl = {
     styp : typ;
     sfname : string;

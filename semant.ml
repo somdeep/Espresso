@@ -11,6 +11,8 @@ type classMap = {
 	cdecl 			        : Ast.cdecl;
 }
 
+let is_lambda = ref false 
+let lambda_count = ref 0
 
 type env = {
 	env_class_maps: classMap StringMap.t;
@@ -199,10 +201,16 @@ and check_expr env expr =
 and check_return env expr = 
     let sexpr, _ = get_sexpr_from_expr env expr in
     let type_sexpr = get_type_from_sexpr sexpr in
-    if type_sexpr = env.env_return_type
-        then SReturn(sexpr, type_sexpr), env
-    else
-        raise (Failure ("Expected type " ^ Ast.string_of_datatype (env.env_return_type) ^ " but got " ^ Ast.string_of_datatype (type_sexpr)))
+
+	if !is_lambda = false
+		then
+    	if type_sexpr = env.env_return_type
+        	then SReturn(sexpr, type_sexpr), env
+    	else
+        	raise (Failure ("Expected type " ^ Ast.string_of_datatype (env.env_return_type) ^ " but got " ^ Ast.string_of_datatype (type_sexpr)))
+
+	else
+		SReturn(sexpr,type_sexpr),env
 
 (* semantically verify an if statement *)
 and check_if env expr st1 st2 =
@@ -522,6 +530,98 @@ and check_call env func_name expr_list =
 
 
 
+
+(*semantic check for lambda functions*)
+and check_lambda env id formals st =
+		
+		let return_present_type lamb_body =
+			match lamb_body with 
+				SBlock(stlist)	->	
+					(
+						let leng = List.length stlist in
+							if((leng) = 0) then
+								raise (Failure ("empty Lambda statement, must atleast contain a return"))
+
+							else
+							let last_stmt = List.hd (List.rev stlist) in 
+							match last_stmt with 
+								SReturn(_,typ)	->	typ 
+							|	_	->	raise(Failure ("Lambda function must end with a return statement"))
+					)
+				|	_	->	raise (Failure "Lambda must be enclosed in a block")
+		in		
+
+
+
+		if StringMap.mem id env.env_locals
+			then raise (Failure ("Duplicate local declaration"))
+		else
+				let old_env = env in
+				let new_env = env in 
+				
+				(*yet to add clash of old params with lambda params, assuming no clash, adding directly*)
+				(*not allowing globals in lambdas*)
+				
+				let get_params_map m formal_node = match formal_node with 
+						Formal(data_type, formal_name) -> (StringMap.add formal_name formal_node m) 
+					| 	_ -> m
+				in
+
+				let env_params = List.fold_left get_params_map StringMap.empty formals in
+
+				let env = {
+					env_class_maps = env.env_class_maps;
+					env_class_map = env.env_class_map;
+					env_name = env.env_name;
+					env_locals = StringMap.empty;
+					env_parameters = env_params;
+					env_return_type = env.env_return_type;
+					env_in_for = env.env_in_for;
+					env_in_while = env.env_in_while;
+					env_in_foreach = env.env_in_foreach;
+					env_reserved = env.env_reserved;
+
+				}
+				in
+				
+
+				(*yet to do : isreturnpresent check for lambda function
+					BUILD LAMBDA MAP TO DEREFERENCE DURING A LAMBDA CALL
+				*)
+				
+				is_lambda := true;
+				let sstmt, _ = parse_stmt env st in
+				is_lambda	:= false;
+
+
+				let ret_typ = return_present_type sstmt in
+				
+
+				(*Restoring old environment*)
+				let old_env = {
+				env_class_maps = old_env.env_class_maps;
+				env_class_map = old_env.env_class_map;
+				env_name = old_env.env_name;
+				env_locals = StringMap.add id ret_typ old_env.env_locals;
+				env_parameters = old_env.env_parameters;
+				env_return_type = old_env.env_return_type;
+				env_in_for = old_env.env_in_for;
+				env_in_while = old_env.env_in_while;
+				env_in_foreach = old_env.env_in_foreach;
+				env_reserved = old_env.env_reserved;
+				}
+				in
+				lambda_count := !lambda_count + 1;
+				SLambda(
+					ret_typ,
+					"lambda_" ^ (string_of_int !lambda_count),
+					 formals,
+					 [ sstmt ]
+				), old_env
+				
+
+				
+
 (* Parse a single statement by matching with different forms that a statement
     can take, and generate appropriate SAST node *)
 and parse_stmt env stmt = match stmt with 
@@ -531,8 +631,9 @@ and parse_stmt env stmt = match stmt with
 	| 	Ast.If(expr,st1,st2) -> check_if env expr st1 st2
 	|	Ast.While(expr,st) -> check_while env expr st
 	|  	Ast.For(exp1,exp2,exp3,st) -> check_for env exp1 exp2 exp3 st
-	|	Ast.Foreach(dt,exp1,exp2,st) -> check_foreach env dt exp1 exp2 st 
-	|	Ast.Break -> check_break env
+	|	Ast.Foreach(dt,exp1,exp2,st) -> check_foreach env dt exp1 exp2 st
+	|	Ast.Lambda(id,formals, st)	->	check_lambda env id formals st  
+	|	Ast.Break -> check_break env 
 	| 	Ast.Local(dt, name) -> check_local env dt name
 
 		
