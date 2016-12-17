@@ -1,12 +1,13 @@
 class Test {
-  int x;
+  //int x;
   int main(int y) {
-     y = 1;
-     int z;
-     z = y + 1;
-     x = z + y;
-     x = -x;
-	print_int(x)
-     return 0;
-   }
+    int x;
+    //y = 1;
+    //int z;
+    //z = y + 1;
+    //x = z + y;
+    //x = -x;
+    print_int(x);
+    return 0;
+  }
 }

@@ -1,19 +1,19 @@
 class Work {
 
-      int work_field;
-	  work_field = 2;
-      int get_work_from_work() {
-      	  return work_field;
-      }
+  int work_field;
+	work_field = 2;
+  int get_work_from_work() {
+    return work_field;
+  }
 
 }
 
 class Test {
   int x;
 
-      int get_work() {
-      	  return 3;
-      }
+  int get_work() {
+    return 3;
+  }
 
 
   int getSum(int n) {

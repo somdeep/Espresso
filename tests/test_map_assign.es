@@ -9,7 +9,7 @@ class Test {
      class Work wObj;
      int [10]arr;
      int x;
-     x = arr[5];
+     //x = arr[5];
      hashmap<int,int> map;
      class Work [5]wArr;
      x = map{x};

@@ -16,7 +16,7 @@ ESPRESSO="./espresso.native"
 
 # Set time limit for all operations
 ulimit -t 30
-TMP_DIR="_tmp"
+TMP_DIR="_tmp2"
 rm ${TMP_DIR}/*.*
 globallog=testall.log
 rm -f $globallog
@@ -75,7 +75,7 @@ RunFail() {
 Check() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.es//'`
+                             s/.es$//'`
     reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 

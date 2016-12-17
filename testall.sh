@@ -75,7 +75,7 @@ RunFail() {
 Check() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.es//'`
+                             s/.es$//'`
     reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
