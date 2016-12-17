@@ -68,6 +68,7 @@ and get_llvm_type (dt : A.typ) = match dt with
 | A.Datatype(Char)  ->  i8_t
 | A.Datatype(Void)  ->  void_t
 | A.Datatype(String)  -> str_t
+| A.Datatype(A.Lambda) -> L.pointer_type(find_class "Lambda")
 | A.Datatype(ObjTyp(name))  ->  L.pointer_type(find_class name)
 | A.ArrayType(prim,i) ->  get_ptr_type (A.ArrayType(prim,(i)))
 | _ -> raise (Failure ("llvm type not yet supported"))

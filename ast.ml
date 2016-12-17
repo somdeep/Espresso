@@ -6,7 +6,7 @@ type op = Add | Sub | Mult | Div | Eq | Neq | Lt | Leq | Gt | Geq | Mod | Pow |
 type uop = Sub | Not
 
 (* These are the primitive datatypes supported by espresso, along with Object *)
-type primitive = Int | Bool | Void | String | Float | Char | ObjTyp of string 
+type primitive = Int | Bool | Void | String | Float | Char | Lambda | ObjTyp of string 
 type typ = Datatype of primitive | Hashmaptype of primitive * primitive | ArrayType of primitive * int
 
 (*type data_typ =  Datatype of typ | Any *)
@@ -95,6 +95,7 @@ let string_of_primitive = function
   | String -> "String" ^ " "
   | Float -> "float" ^ " "
   | Char -> "char" ^ " "
+  | Lambda -> "lambda" ^ " "
   | ObjTyp(s) -> "class " ^ s ^ " " 
 
 

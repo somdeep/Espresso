@@ -97,6 +97,7 @@ typ:
   | STRING { String }
   | FLOAT { Float }
   | CHAR { Char }
+  | LAMBDA { Lambda }
   | CLASS ID {ObjTyp($2)}
 
 hashmap_typ:
@@ -125,7 +126,7 @@ stmt:
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | FOREACH LPAREN data_typ ID COLON ID RPAREN stmt
      { Foreach($3, $4, $6, $8) }
-  | LAMBDA ID LPAREN formals_opt RPAREN stmt  { Lambda($2,$4,$6) }
+  | LAMBDA COLON ID LPAREN formals_opt RPAREN stmt  { Lambda($3,$5,$7) }
   | BREAK SEMI { Break }
   | data_typ ID  SEMI { Local($1,$2) }
  /* | data_typ ID ASSIGN expr SEMI { Local($1, $2, $4) } 

@@ -166,7 +166,7 @@ and get_type_from_sexpr sexpr = match sexpr with
     |   SFloatlit(_) -> Ast.Datatype(Float)
     |   SBoolLit(_) -> Ast.Datatype(Bool)
     |   SCharlit(_) -> Ast.Datatype(Char)
-    |   SId(_, t) -> t
+	|   SId(_, t) -> t
     |   SBinop(_,_,_,t) -> t
     |   SUnop(_,_,t) -> t
     |   SAssign(_,_,t) -> t
@@ -506,7 +506,7 @@ and check_call env func_name expr_list = match env.env_name with
 				let param_type = get_type_from_sexpr param in
 				if formal_type = param_type 
 					then param
-					else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
+					else raise (Failure("Type mismatch in lambda . Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
 			in
 
 			(* check lengths of formal and passed parameters and get actual parameters *)
@@ -521,7 +521,6 @@ and check_call env func_name expr_list = match env.env_name with
 			(* get the actual lambda prototype from the map *)
 			let func_handle = StringMap.find func_name !lambda_func_map in
 			let actuals_list = get_actual_params func_handle.sformals sexpr_list in
-
 			SCall(func_handle.sfname, actuals_list, func_handle.styp)
 		)
 	| _ -> 
@@ -536,7 +535,7 @@ and check_call env func_name expr_list = match env.env_name with
 				let param_type = get_type_from_sexpr param in
 				if formal_type = param_type 
 					then param
-					else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ string_of_datatype param_type))
+					else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ (string_of_datatype param_type)))
 			in
 
 			(* check lengths of formal and passed parameters and get actual parameters *)
@@ -563,9 +562,20 @@ and check_call env func_name expr_list = match env.env_name with
 	)
 
 and check_lambda_call env func_name expr_list = 
+	
+	(* check if func_name is in params or locals *)
+	let sfunc_name = try let ftype = StringMap.find func_name env.env_parameters in
+						 match ftype with Formal(_, name) -> name
+						with | Not_found ->
+							(
+								try let _ = StringMap.find func_name env.env_locals in
+								func_name
+								with | Not_found -> raise(Failure("identifier " ^ func_name ^ " was not found!"))
+							)
+	in
 	let lambda_obj = Id("lambda_obj") in
 	(* actual lambda name is retrieved from the map in check_call *)
-	let lambda_call = Call(func_name, expr_list) in
+	let lambda_call = Call(sfunc_name, expr_list) in
 	check_object_access env lambda_obj lambda_call 
 
 
@@ -637,16 +647,16 @@ and check_lambda env id formals st =
 
 				(*Restoring old environment*)
 				let old_env = {
-				env_class_maps = old_env.env_class_maps;
-				env_class_map = old_env.env_class_map;
-				env_name = old_env.env_name;
-				env_locals = StringMap.add id ret_typ old_env.env_locals;
-				env_parameters = old_env.env_parameters;
-				env_return_type = old_env.env_return_type;
-				env_in_for = old_env.env_in_for;
-				env_in_while = old_env.env_in_while;
-				env_in_foreach = old_env.env_in_foreach;
-				env_reserved = old_env.env_reserved;
+					env_class_maps = old_env.env_class_maps;
+					env_class_map = old_env.env_class_map;
+					env_name = old_env.env_name;
+					env_locals = StringMap.add id (Ast.Datatype(Lambda)) old_env.env_locals;
+					env_parameters = old_env.env_parameters;
+					env_return_type = old_env.env_return_type;
+					env_in_for = old_env.env_in_for;
+					env_in_while = old_env.env_in_while;
+					env_in_foreach = old_env.env_in_foreach;
+					env_reserved = old_env.env_reserved;
 				}
 				in
 				lambda_count := !lambda_count + 1;
@@ -666,12 +676,13 @@ and check_lambda env id formals st =
 				lambda_func_map := StringMap.add id lambda_sfdecl !lambda_func_map ;
 				(* add this lambda to the global list of lambda functions *)
 				lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
-				SLambda(
-					ret_typ,
+				(*SLambda(
+					Ast.Datatype(Lambda),
 					"lambda_" ^ (string_of_int !lambda_count),
 					 formals,
 					 [ sstmt ]
-				), old_env
+				), old_env*)
+				SLocal(Ast.Datatype(Lambda), id), old_env
 				(*SExpr(SNoexpr), old_env*)
 				
 
