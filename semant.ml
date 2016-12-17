@@ -1,6 +1,5 @@
 open Ast
 open Sast 
-(*open Helper*)
 
 module StringMap = Map.Make (String)
 
@@ -632,19 +631,11 @@ and check_lambda env id formals st =
 				}
 				in
 				
-
-				(*yet to do : isreturnpresent check for lambda function
-					BUILD LAMBDA MAP TO DEREFERENCE DURING A LAMBDA CALL
-				*)
-				
 				is_lambda := true;
 				let sstmt, _ = parse_stmt env st in
 				is_lambda	:= false;
-
-
-				let ret_typ = return_present_type sstmt in
 				
-
+				let ret_typ = return_present_type sstmt in
 				(*Restoring old environment*)
 				let old_env = {
 					env_class_maps = old_env.env_class_maps;
@@ -676,14 +667,7 @@ and check_lambda env id formals st =
 				lambda_func_map := StringMap.add id lambda_sfdecl !lambda_func_map ;
 				(* add this lambda to the global list of lambda functions *)
 				lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
-				(*SLambda(
-					Ast.Datatype(Lambda),
-					"lambda_" ^ (string_of_int !lambda_count),
-					 formals,
-					 [ sstmt ]
-				), old_env*)
 				SLocal(Ast.Datatype(Lambda), id), old_env
-				(*SExpr(SNoexpr), old_env*)
 				
 
 				

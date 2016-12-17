@@ -497,7 +497,6 @@ and stmt_gen llbuilder = function
 | SFor(exp1,exp2,exp3,st) ->  for_gen llbuilder exp1 exp2 exp3 st
 | SWhile(e,s) ->  while_gen llbuilder e s
 | SLocal(dt,st) ->  local_gen llbuilder dt st
-| SLambda(_,_,_,_) -> L.build_add (L.const_int i32_t 0) (L.const_int i32_t 0) "nop" llbuilder
 |  _ -> raise (Failure ("unknown statement"))
   
 

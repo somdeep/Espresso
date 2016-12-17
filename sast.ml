@@ -27,7 +27,6 @@ type sstmt =
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
   | SForeach of typ * string * string * sstmt
-  | SLambda of typ * string * formal list * sstmt list
   | SBreak
   | SLocal of typ * string
   
