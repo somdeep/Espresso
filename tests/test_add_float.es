@@ -7,6 +7,7 @@ class Test {
     y = 2.0;
     float z;
     z = x+y;
+	print_float(z);
     return 0;
    }
 }

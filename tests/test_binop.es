@@ -5,6 +5,7 @@ class Test {
      int z;
      z = y + 1;
      x = z + y;
+	 print_int(x);
      return 0;
    }
 }

@@ -1,8 +1,9 @@
 class Work {
 
       int work_field;
+	  work_field = 2;
       int get_work_from_work() {
-      	  return 0;
+      	  return work_field;
       }
 
 }
@@ -11,7 +12,7 @@ class Test {
   int x;
 
       int get_work() {
-      	  return 0;
+      	  return 3;
       }
 
 

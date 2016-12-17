@@ -6,6 +6,7 @@ int main(int a) {
 
 	  Times up!@#$%^&*()
 	*/
-    return 0;
+    print_int(0);
+	return 0;
    }
 }

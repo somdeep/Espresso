@@ -6,9 +6,7 @@ class Test {
      z = y + 1;
      x = z + y;
      x = -x;
-     bool b;
-     b = false;
-     b = !b;
+	print_int(x)
      return 0;
    }
 }

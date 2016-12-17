@@ -1,4 +1,3 @@
-
 class work
 {
 	int a;	
@@ -32,4 +31,3 @@ class animal
 		return i*2;
 	}
 }
-	

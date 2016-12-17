@@ -16,6 +16,7 @@ class Test {
      x = 10;
      class Work w;
      w.work_field = w.test_obj.x + w.mem_func('a');
+	 print_int(w.work_field);
      return 0;
    }
 }

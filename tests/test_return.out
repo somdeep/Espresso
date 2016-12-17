@@ -5,16 +5,17 @@ class test_return
 		return 1;
 	}
 
-	void main()
+	int main()
 	{
-		String st;
-		st = "hello";
-		print_string(st);
+		int a;
+		class work obj;
+		print_string(a());
+		return 1;
 	}
 	
 	String a()
 	{
-		return "abc";
+		return "a";
 	}
 }
 

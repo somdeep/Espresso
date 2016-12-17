@@ -7,6 +7,8 @@ int main(int a) {
 	    x = x +2;
 	    y = 10;
 	    while(y < 20){
+		    if((x==2)&&(y == 15))
+			   print_int(x+y);
 	    	y = y + 1 ;
 	    }
 	} 

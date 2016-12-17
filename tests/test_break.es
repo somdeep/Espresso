@@ -4,10 +4,12 @@ class test_return
 	{
 		while(1<2 || 2>4)
 		{
-			int i;
+			print_int(2);
 			break;
+			print_int(3);
+			return 3;
 		}
-		return 1;
+		return 2;
 	}
 
 	int main()

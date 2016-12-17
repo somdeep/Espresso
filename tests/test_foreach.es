@@ -1,30 +1,17 @@
-class work
-{
-	int[10] a;	
-	void main()
-	{
-	}
-
-}
-
-class work2
+class Test
 {
 	int a;
-	void main2()
+	void main()
 	{
 		int[10] a;
 		int b;
-		hashmap <int,int> hm;
 		foreach( int c : a)
 		{
 			int abc;
 			c = c + 1;
+			if(c == 5)
+			   print_int(c);
 			break;
 		}
 	}
-	
-
-
-	
-	
 }
