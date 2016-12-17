@@ -477,16 +477,27 @@ and return_gen llbuilder exp typ =
 
 (*Code generation for local declaration*)
 and local_gen llbuilder dt st  =
-  let t = match dt with
-          A.Datatype(A.ObjTyp(name)) -> find_class name
+  let arr,t,flag = match dt with
+          A.Datatype(A.ObjTyp(name)) -> (L.build_add (L.const_int i32_t 0) (L.const_int i32_t 0) "nop" llbuilder),find_class name,false
         (*| A.ArrayType(A.(),i) ->  array_create_gen llbuilder prim i st*)
-        | A.ArrayType(prim,len)  ->  ignore (array_create_gen llbuilder (A.Datatype(prim)) dt len); get_llvm_type dt
-        | _ -> get_llvm_type dt
+        | A.ArrayType(prim,len)  ->  (array_create_gen llbuilder (A.Datatype(prim)) dt len),get_llvm_type dt,true
+        | _ -> (L.build_add (L.const_int i32_t 0) (L.const_int i32_t 0) "nop" llbuilder),get_llvm_type dt,false
   in
 
+  
   let alloc = L.build_alloca t st llbuilder in
   Hash.add values st alloc;
-  alloc
+  
+  if flag = false 
+    then  alloc
+
+  else
+    (*let lhs = SId(st,dt) in*)
+    let generated_lhs = id_gen llbuilder st dt false false in
+    ignore(L.build_store arr generated_lhs llbuilder);
+    alloc
+
+
 
 (*Codegen for stmt*)
 and stmt_gen llbuilder = function  
