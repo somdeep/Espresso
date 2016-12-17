@@ -9,6 +9,7 @@ class test_return
 	{
 		int a;
 		class work obj;
+		print_string(a());
 		return 1;
 	}
 	

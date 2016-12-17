@@ -5,6 +5,7 @@ class Test {
   	int main(int y) {
   		int z;
   		z = plus(2,3);
+		print_int(z);
   		return z;
    }
 }

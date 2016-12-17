@@ -7,9 +7,9 @@ int main(int a) {
     y = 2;
     bool z;
     if(x == 2 || y ==1)
-    	z = true;
+    	print_int(3);
     else
-    	z = false; 
+    	print_int(0); 
     return 0;
    }
 }

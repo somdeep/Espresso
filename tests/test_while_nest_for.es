@@ -7,7 +7,10 @@ int main(int a) {
 	    x = x +2;
 	    y = 10;
 	    for(y =0; y <10;y = y +1){
-	    	y = y + 1 ;
+	    	if(x==2 && y ==0)
+			    print_int(x+y);
+			y = y + 1 ;
+			
 	    }
 	} 
     return 0;

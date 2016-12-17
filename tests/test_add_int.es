@@ -7,6 +7,7 @@ int main(int a) {
     y = 2;
     int z;
     z = x+y;
+	print_int(z);
     return 0;
    }
 }

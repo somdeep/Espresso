@@ -15,6 +15,7 @@ int main(int a) {
     int y;
     x = 12;
     y = 8;
-	return gcd(x,y);
+	print_int(gcd(x,y));
+	return 0;
    }
 }

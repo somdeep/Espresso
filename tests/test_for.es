@@ -3,17 +3,18 @@ class test_return
 	int abc()
 	{
 		int j;
-		for(j=1;j>0;j=j+1)
+		for(j=1;j<10;j=j+1)
 		{
 			int i;
 		}
-		return 1;
+		return j;
 	}
 
 	int main()
 	{
 		int a;
-		class work obj;
+		class test_return obj;
+		print_int(test_return.abc());
 		return 1;
 	}
 	

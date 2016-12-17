@@ -1,31 +1,21 @@
-class test_return
+class test_while
 {
 	int abc()
 	{
-		while(1<2 || 2>4)
+		int i;
+		int sum;
+		while(i<5)
 		{
-			int i;
+			sum = sum + i;
 		}
-		return 1;
+		return sum;
 	}
 
 	int main()
 	{
 		int a;
-		class work obj;
+		class test_while obj;
+		print_int(obj.abc());
 		return 1;
-	}
-	
-	String a()
-	{
-		return "a";
-	}
-}
-
-class work
-{
-	int handle()
-	{
-		return 1;	
 	}
 }

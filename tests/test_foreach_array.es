@@ -11,7 +11,8 @@ class Test {
      sum = 0;
      foreach(int c: arr){
      sum = sum + c;
-     }     
+     }
+     print_int(sum);     
      return sum;
    }
 }

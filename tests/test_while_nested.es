@@ -9,6 +9,8 @@ int main(int a) {
 
 	    x = x - 8;
 	    while( y < 40){
+		    if(x == 69 && y == 22)
+			    print_int(x+y);
 	    	y = y - 5;
 	    }
 	} 
