@@ -27,6 +27,7 @@ let params:(string, L.llvalue) Hash.t = Hash.create 50
 let class_types:(string, L.lltype) Hash.t = Hash.create 10
 let class_field_indexes:(string, int) Hash.t = Hash.create 50
 let class_fields:(string, L.llvalue) Hash.t = Hash.create 50
+let class_this:(string,L.llvalue) Hash.t = Hash.create 50
 
 
 
@@ -550,6 +551,12 @@ let func_body_gen sfunc_decl =
   let lambda_obj_name = "lambda_obj" in
   let init_lambda_obj = [SLocal(lambda_obj_type, lambda_obj_name)] in
 
+  (*let _ = L.build_alloca (get_llvm_type this_type) this_name llbuilder in
+  let this_val = Hash.find class_this sfunc_decl.scontext_class in
+  ignore(Hash.add values this_name this_val);
+  ignore(L.build_store this_val generated_lhs llbuilder);
+ *)
+
   let _ = stmt_gen llbuilder (SBlock(init_this @ init_lambda_obj @ sfunc_decl.sbody)) in
   if sfunc_decl.styp = Datatype(Void) 
 		then ignore(L.build_ret_void llbuilder);
@@ -562,6 +569,7 @@ let class_stub_gen s =
     Hash.add class_types s.scname class_type
 
 let class_gen s =
+
   let class_type = Hash.find class_types s.scname in
   let type_list = List.map  (function A.Vdecl(d,_) -> get_llvm_type d) s.scbody.sfields in
   let name_list = List.map (function A.Vdecl(_,s) -> s) s.scbody.sfields in
@@ -575,17 +583,27 @@ let class_gen s =
     let n = s.scname ^ "." ^ name in
     Hash.add class_field_indexes n i; 
   ) name_list;
+  
+  (*ignore(setup_this_pointer s.scname);*)
   L.struct_set_body class_type type_array true
+
+let setup_this_pointer llbuilder s = 
+  let class_type = Hash.find class_types s.scname in
+  let alloc = L.build_malloc class_type (s.scname ^ "_this") llbuilder in
+
+  Hash.add class_this s.scname alloc
+
 
 
 (*Code generation for the main function of program*)
-let main_gen main = 
+let main_gen main classes= 
   Hash.clear values;
   Hash.clear params;
   let ftype = L.function_type i32_t [||] in
   let func = L.define_function "main" ftype the_module in 
   let llbuilder = L.builder_at_end context (L.entry_block func) in
 
+  let _ = List.map (fun s-> setup_this_pointer llbuilder s) classes in
   (* initialize this pointer *)  
   let this_type = A.Datatype(A.ObjTyp(main.scontext_class)) in
   let this_name = (main.scontext_class ^ "_this" ) in
@@ -596,7 +614,12 @@ let main_gen main =
   let lambda_obj_name = "lambda_obj" in
   let init_lambda_obj = [SLocal(lambda_obj_type, lambda_obj_name)] in
 
-  let _ = stmt_gen llbuilder (SBlock(init_this @ init_lambda_obj @ main.sbody)) in
+  let generated_lhs = L.build_alloca (get_llvm_type this_type) this_name llbuilder in
+  let this_val = Hash.find class_this main.scontext_class in
+  ignore(Hash.add values this_name this_val);
+  ignore(L.build_store this_val generated_lhs llbuilder);
+  
+  let _ = stmt_gen llbuilder (SBlock(init_lambda_obj @ main.sbody)) in
   L.build_ret (L.const_int i32_t 0) llbuilder
 
 (* declare library functions *)
@@ -612,12 +635,13 @@ let translate sprogram =
   let _ = construct_library_functions in
   let _ = List.map (fun s -> class_stub_gen s) sprogram.classes in
   let _ = List.map(fun s -> class_gen s) sprogram.classes in
+  
 
   (* generate llvm code for function prototypes *)
   let _ = List.map (fun f -> func_stub_gen f) sprogram.functions in
   (* generate llvm code for the function body *)
   let _ = List.map (fun f -> func_body_gen f) sprogram.functions in
 
-  let _ = main_gen sprogram.main in 
+  let _ = main_gen sprogram.main sprogram.classes in 
 
   the_module
