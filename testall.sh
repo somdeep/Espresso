@@ -17,6 +17,7 @@ ESPRESSO="./espresso.native"
 # Set time limit for all operations
 ulimit -t 30
 TMP_DIR="_tmp2"
+mkdir ${TMP_DIR}
 rm ${TMP_DIR}/*.*
 globallog=testall.log
 rm -f $globallog
@@ -88,7 +89,7 @@ Check() {
 
     generatedfiles=""
     generatedfiles="$generatedfiles ${TMP_DIR}/${basename}.ll ${TMP_DIR}/${basename}.out" &&
-    Run "$ESPRESSO" "<" $1 ">" "${TMP_DIR}/${basename}.ll" &&
+    Run "$ESPRESSO" "-l <" $1 ">" "${TMP_DIR}/${basename}.ll" &&
     Run "$LLI" "${TMP_DIR}/${basename}.ll" ">" "${TMP_DIR}/${basename}.out" &&
     Compare ${TMP_DIR}/${basename}.out ${reffile}.out ${TMP_DIR}/${basename}.diff
     # tr -d "\n" < ${TMP_DIR}/${basename}.ll > ${TMP_DIR}/${basename}.after1
