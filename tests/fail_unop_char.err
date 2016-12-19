@@ -1,0 +1,1 @@
+Fatal error: exception Failure("unary oparator can only be applied to Int, Float or Bool types ")

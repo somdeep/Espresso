@@ -1,0 +1,1 @@
+Fatal error: exception Failure("types int  and int  are incompatible for logical operations. Only boolean types are supported. ")

@@ -185,8 +185,8 @@ do
 #	    CheckFail $file 2>> $globallog
 #	    ;;
 	*)
-	    echo "unknown file type $file"
-	    globalerror=1
+#	    echo "unknown file type $file"
+#	    globalerror=1
 	    ;;
     esac
 done
