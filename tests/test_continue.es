@@ -22,16 +22,4 @@ class test_return
 		return 1;
 	}
 	
-	String a()
-	{
-		return "a";
-	}
-}
-
-class work
-{
-	int handle()
-	{
-		return 1;	
-	}
 }

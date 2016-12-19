@@ -10,7 +10,7 @@ class work
 		int[10] arr;
 		this.a = 100;
 		class animal an;
-		lambda : lfunc(char a) { return a; }
+		lambda : char lfunc(char a) { return a; }
 		print_char (an.getChar(lfunc));
 	}
 }
