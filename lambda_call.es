@@ -11,21 +11,24 @@ class work
 		int[10] arr;
 		this.a = 100;
 		class animal an;
-		lambda lfunc(int a) { return a * a; }
-		print_int (an.perform());
+		an.val = 10;
+		lambda : lfunc(int a) { return a * a; }
+		print_int (an.perform(an, lfunc));
+		
 
 	}
 }
+
 class animal
 {
 	char b;
 	bool x;
+	int val;
 	
-	int perform()
+	int perform(class animal obj, lambda lfunc)
 	{
 		int i;
-		i = 5;
-		i = #lfunc(i);
+		i = #lfunc(obj.val);
 		return i*2;
 	}
 }

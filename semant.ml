@@ -146,7 +146,7 @@ let rec get_sexpr_from_expr env expr = match expr with
     |   BoolLit b -> SBoolLit(b), env
     |   Charlit c -> SCharlit(c), env
 	|	Id id -> SId(id, (get_id_data_type env id)), env
-	|   This  -> SId(env.env_name ^ "_this", Datatype(ObjTyp(env.env_name))), env
+	|   This  -> SId("this", Datatype(ObjTyp(env.env_name))), env
 	| 	Assign(expr1, expr2) -> check_assignment env expr1 expr2, env
 	|	Binop(expr1, op, expr2) -> check_binop env expr1 op expr2, env
 	|	Unop(op, expr) -> check_unop env op expr, env
@@ -447,7 +447,7 @@ and check_object_access env expr1 expr2 =
 	(* verify that the invoking object is a valid identifier *)
 	let check_obj_id expr = match expr with 
 		Id obj -> SId(obj, get_id_data_type env obj) 
-	|	This -> SId(env.env_name ^ "_this", Datatype(ObjTyp(env.env_name)))
+	|	This -> SId("this", Datatype(ObjTyp(env.env_name)))
 	|	ArrayAccess(id, expr) -> check_array_access env id expr
 	in
 	
@@ -541,7 +541,7 @@ and check_call env func_name expr_list = match env.env_name with
 			let get_actual_params formal_params params = 
 				let formal_len = List.length formal_params in
 				let param_len = List.length params in
-					if formal_len = param_len
+					if param_len = formal_len
 						then List.map2 get_actual_param formal_params params
 						else raise(Failure(" formal and actual parameters have unequal lengths "))
 			in
@@ -742,7 +742,7 @@ let convert_fdecl_to_sfdecl class_maps reserved class_map cname fdecl =
 		| 	_ -> m
 	in
 	let this_ptr = Formal(Datatype(ObjTyp(cname)), "this") in
-	let env_params = List.fold_left get_params_map StringMap.empty (this_ptr :: fdecl.formals) in
+	let env_params = List.fold_left get_params_map StringMap.empty (fdecl.formals) in
     let env = {
 		env_class_maps 	= class_maps;
 		env_class_map = class_map;
