@@ -6,6 +6,10 @@ class test_return
 		for(j=1;j<10;j=j+1)
 		{
 			int i;
+			if (j == 5) {
+
+			   break;
+			}
 		}
 		return j;
 	}
@@ -14,7 +18,7 @@ class test_return
 	{
 		int a;
 		class test_return obj;
-		print_int(test_return.abc());
+		print_int(obj.abc());
 		return 1;
 	}
 	
