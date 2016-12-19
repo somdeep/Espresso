@@ -81,8 +81,6 @@ Check() {
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
     echo -n "$basename...\n"
-    echo -n "$reffile\n" 
-    echo -n "$basedir\n"
 
     echo 1>&2
     echo "###### Testing $basename" 1>&2
@@ -120,7 +118,7 @@ Check() {
 CheckFail() {
     error=0
     basename=`echo $1 | sed 's/.*\\///
-                             s/.es//'`
+                             s/.es$//'`
     reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
