@@ -12,7 +12,7 @@ class work
 		this.a = 100;
 		class animal an;
 		an.val = 10;
-		lambda : lfunc(int a) { return a * a; }
+		lambda : int lfunc(int a) { return a * a; }
 		print_int (an.perform(an, lfunc));
 		
 

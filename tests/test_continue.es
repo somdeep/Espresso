@@ -8,7 +8,7 @@ class test_return
 			int i;
 			if (j == 5) {
 
-			   break;
+			   continue;
 			}
 		}
 		return j;

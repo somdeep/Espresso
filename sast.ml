@@ -28,6 +28,7 @@ type sstmt =
   | SWhile of sexpr * sstmt
   | SForeach of typ * string * string * sstmt
   | SBreak
+  | SContinue
   | SLocal of typ * string
   
 type ftype = Reserved | Udf

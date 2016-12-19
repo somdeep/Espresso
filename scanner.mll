@@ -57,6 +57,7 @@ rule token = parse
 | "true"   { TRUE }
 | "false"  { FALSE }
 | "break"  { BREAK }
+| "continue" { CONTINUE }
 | "hashmap"{HASHMAP}
 | "class"  { CLASS }
 | "this"   { THIS }

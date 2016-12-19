@@ -41,8 +41,9 @@ type stmt =
   | For of expr * expr * expr * stmt
   | While of expr * stmt
   | Foreach of typ * string * string * stmt
-  | Lambda of string * formal list * stmt
+  | Lambda of typ * string * formal list * stmt
   | Break
+  | Continue
   | Local of typ * string
   
 type func_decl = {
@@ -165,7 +166,7 @@ let rec string_of_stmt = function
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Foreach(t,e1,e2,s) -> "foreach (" ^ string_of_datatype t ^ e1 ^
     " : " ^  e2 ^ ")\n" ^ string_of_stmt s 
-  | Lambda(str,fml,stmt) -> "lambda " ^ str ^ "(" ^ String.concat ", " (List.map string_of_formal fml) ^ ")" ^ string_of_stmt stmt
+  | Lambda(ret_typ, str,fml,stmt) -> "lambda :" ^ (string_of_datatype ret_typ) ^ str ^ "(" ^ String.concat ", " (List.map string_of_formal fml) ^ ")" ^ string_of_stmt stmt
   | Break -> "break;\n"
   | Local(t,s) -> string_of_datatype t ^  s ^ ";\n"
 

@@ -335,7 +335,11 @@ and check_foreach env dt id1 id2 st =
 	
 	
 
-
+and check_continue env = 
+	if env.env_in_for || env.env_in_while || env.env_in_foreach then
+		SContinue, env
+	else
+		raise (Failure ("Continue cannot be called outside of a loop"))
 
 (*semantically verify a break statement*)
 and check_break env =
@@ -516,9 +520,10 @@ and check_call env func_name expr_list = match env.env_name with
 						then List.map2 get_actual_param formal_params params
 						else raise(Failure(" formal and actual parameters have unequal lengths "))
 			in
-
+			
 			(* get the actual lambda prototype from the map *)
 			let func_handle = StringMap.find func_name !lambda_func_map in
+			
 			let actuals_list = get_actual_params func_handle.sformals sexpr_list in
 			SCall(func_handle.sfname, actuals_list, func_handle.styp)
 		)
@@ -579,7 +584,7 @@ and check_lambda_call env func_name expr_list =
 
 
 (*semantic check for lambda functions*)
-and check_lambda env id formals st =
+and check_lambda env id formals st ret_typ=
 		
 		let return_present_type lamb_body =
 			match lamb_body with 
@@ -635,39 +640,44 @@ and check_lambda env id formals st =
 				let sstmt, _ = parse_stmt env st in
 				is_lambda	:= false;
 				
-				let ret_typ = return_present_type sstmt in
-				(*Restoring old environment*)
-				let old_env = {
-					env_class_maps = old_env.env_class_maps;
-					env_class_map = old_env.env_class_map;
-					env_name = old_env.env_name;
-					env_locals = StringMap.add id (Ast.Datatype(Lambda)) old_env.env_locals;
-					env_parameters = old_env.env_parameters;
-					env_return_type = old_env.env_return_type;
-					env_in_for = old_env.env_in_for;
-					env_in_while = old_env.env_in_while;
-					env_in_foreach = old_env.env_in_foreach;
-					env_reserved = old_env.env_reserved;
-				}
-				in
-				lambda_count := !lambda_count + 1;
-				(* generate an sfunc_decl object to transform the lamda into a function *)
+				let actual_ret_typ = return_present_type sstmt in
+				if actual_ret_typ = ret_typ
+					then (
+						(*Restoring old environment*)
+						let old_env = {
+							env_class_maps = old_env.env_class_maps;
+							env_class_map = old_env.env_class_map;
+							env_name = old_env.env_name;
+							env_locals = StringMap.add id (Ast.Datatype(Lambda)) old_env.env_locals;
+							env_parameters = old_env.env_parameters;
+							env_return_type = old_env.env_return_type;
+							env_in_for = old_env.env_in_for;
+							env_in_while = old_env.env_in_while;
+							env_in_foreach = old_env.env_in_foreach;
+							env_reserved = old_env.env_reserved;
+						}
+						in
+						(*lambda_count := !lambda_count + 1;*)
+						(* generate an sfunc_decl object to transform the lamda into a function *)
 
-				let lambda_sfdecl = {
-					styp = ret_typ;
-					sfname = "lambda_" ^ (string_of_int !lambda_count);
-					sformals = formals;
-					sbody = [ sstmt ];
-					sftype = Sast.Udf;
-					scontext_class =  "Lambda";
-					sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
-				} in
-				(* add the lambda to a lambda_func_map keyed by it's name. 
-					This is why the name must be unique *)
-				lambda_func_map := StringMap.add id lambda_sfdecl !lambda_func_map ;
-				(* add this lambda to the global list of lambda functions *)
-				lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
-				SLocal(Ast.Datatype(Lambda), id), old_env
+						let lambda_sfdecl = {
+							styp = ret_typ;
+							sfname = "lambda_" ^ id;
+							sformals = formals;
+							sbody = [ sstmt ];
+							sftype = Sast.Udf;
+							scontext_class =  "Lambda";
+							sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
+						} in
+						(* add the lambda to a lambda_func_map keyed by it's name. 
+							This is why the name must be unique *)
+						(*lambda_func_map := StringMap.add id lambda_sfdecl !lambda_func_map ;*)
+						(* add this lambda to the global list of lambda functions *)
+						lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
+						SLocal(Ast.Datatype(Lambda), id), old_env
+					)
+					else raise(Failure("expected " ^ (string_of_datatype ret_typ) ^ " but got " ^  (string_of_datatype actual_ret_typ) ^ " for lambda " ^ id))
+					
 				
 
 				
@@ -682,8 +692,9 @@ and parse_stmt env stmt = match stmt with
 	|	Ast.While(expr,st) -> check_while env expr st
 	|  	Ast.For(exp1,exp2,exp3,st) -> check_for env exp1 exp2 exp3 st
 	|	Ast.Foreach(dt,exp1,exp2,st) -> check_foreach env dt exp1 exp2 st
-	|	Ast.Lambda(id,formals, st)	->	check_lambda env id formals st  
-	|	Ast.Break -> check_break env 
+	|	Ast.Lambda(ret_typ, id,formals, st)	-> check_lambda env id formals st ret_typ
+	|	Ast.Break -> check_break env
+	|	Ast.Continue -> check_continue env 
 	| 	Ast.Local(dt, name) -> check_local env dt name
 
 		
@@ -824,6 +835,43 @@ let get_sast class_maps reserved cdecls =
 
 
 
+let handle_lambdas cdecl = 
+	let methods = cdecl.cbody.methods in
+
+	(* parse a lambda expression from a given statement *)
+	let parse_lambda_from_stmt stmt = match stmt with
+			Lambda(ret_typ, id,formals, st) -> 
+			(
+						let lambda_prototype = {
+							styp = ret_typ;
+							sfname = "lambda_" ^ id;
+							sformals = formals;
+							sbody = [ ];
+							sftype = Sast.Udf;
+							scontext_class =  "Lambda";
+							sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
+						} in
+						lambda_count := !lambda_count + 1;
+						ignore(lambda_func_map := StringMap.add id lambda_prototype !lambda_func_map) ;
+						"done"
+			)
+		| 	_ -> "idk"
+	in
+
+	let handle_method func = 
+		(* identify lambda expressions from a given list of statements *)
+		let rec handle_statements stmts = match stmts with
+				hd::tl ->
+					ignore(parse_lambda_from_stmt hd);
+					"1" :: handle_statements tl
+				| [] -> []
+		in
+		handle_statements func.body
+		
+	in
+	ignore(List.map handle_method methods); 
+	[]
+
 
 
 let check pgm = match pgm with(*function*)
@@ -835,6 +883,9 @@ let check pgm = match pgm with(*function*)
        
         (* get class_map for the given class *)
       	let class_maps = get_class_maps cdecls reserved_maps in
+		
+		(* make one pass over all functions to extract lambda declarations and add the prototypes to the lambda_func hashtable  *)
+		let _ = List.map handle_lambdas cdecls in
         
         (* perform semantic checking of all fields and methods. Generate an SAST *)
    	let sast = get_sast class_maps reserved_functions cdecls in

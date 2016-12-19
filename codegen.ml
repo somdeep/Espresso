@@ -506,7 +506,13 @@ and local_gen llbuilder dt st  =
     ignore(L.build_store arr generated_lhs llbuilder);
     alloc
 
+and break_gen llbuilder = 
+  let bblock = fun () -> !br_block in
+  L.build_br (bblock ()) llbuilder
 
+and continue_gen llbuilder = 
+  let bblock = fun () -> !cont_block in
+  L.build_br (bblock ()) llbuilder
 
 (*Codegen for stmt*)
 and stmt_gen llbuilder = function  
@@ -517,6 +523,8 @@ and stmt_gen llbuilder = function
 | SFor(exp1,exp2,exp3,st) ->  for_gen llbuilder exp1 exp2 exp3 st
 | SWhile(e,s) ->  while_gen llbuilder e s
 | SLocal(dt,st) ->  local_gen llbuilder dt st
+| SBreak -> break_gen llbuilder
+| SContinue -> continue_gen llbuilder
 |  _ -> raise (Failure ("unknown statement"))
   
 

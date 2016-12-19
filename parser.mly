@@ -8,7 +8,7 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACE RBRACE LSQUARE RSQUARE COMMA COLON DOT THIS POUND
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT MODULUS POWER
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK HASHMAP LAMBDA
+%token RETURN IF ELSE FOR WHILE FOREACH INT BOOL VOID STRING FLOAT CHAR BREAK HASHMAP LAMBDA CONTINUE
 %token <int> LITERAL
 %token <string> ID
 %token <string> STRLIT
@@ -17,7 +17,7 @@ open Ast
 %token EOF
 
 %nonassoc NOELSE POUND
-%nonassoc ELSE LSQUARE
+%nonassoc ELSE 
 %right ASSIGN
 %left OR
 %left AND
@@ -26,6 +26,7 @@ open Ast
 %left PLUS MINUS
 %left TIMES DIVIDE MODULUS POWER
 %right NOT SUB
+%nonassoc LSQUARE
 %right DOT
 
 %start program
@@ -126,8 +127,9 @@ stmt:
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | FOREACH LPAREN data_typ ID COLON ID RPAREN stmt
      { Foreach($3, $4, $6, $8) }
-  | LAMBDA COLON ID LPAREN formals_opt RPAREN stmt  { Lambda($3,$5,$7) }
+  | LAMBDA COLON data_typ ID LPAREN formals_opt RPAREN stmt  { Lambda($3, $4, $6, $8) }
   | BREAK SEMI { Break }
+  | CONTINUE SEMI { Continue }
   | data_typ ID  SEMI { Local($1,$2) }
  /* | data_typ ID ASSIGN expr SEMI { Local($1, $2, $4) } 
 */
