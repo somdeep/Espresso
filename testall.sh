@@ -16,7 +16,8 @@ ESPRESSO="./espresso.native"
 
 # Set time limit for all operations
 ulimit -t 30
-TMP_DIR="_tmp"
+TMP_DIR="_tmp2"
+mkdir ${TMP_DIR}
 rm ${TMP_DIR}/*.*
 globallog=testall.log
 rm -f $globallog
@@ -79,27 +80,29 @@ Check() {
     reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
-    echo -n "$basename..."
+    echo -n "$basename...\n"
+    echo -n "$reffile\n" 
+    echo -n "$basedir\n"
 
     echo 1>&2
     echo "###### Testing $basename" 1>&2
 
     generatedfiles=""
-    generatedfiles="$generatedfiles ${TMP_DIR}/${basename}.ll ${TMP_DIR}/${basename}.out ${TMP_DIR}/${basename}.before ${TMP_DIR}/${basename}.after " &&
-    Run "$ESPRESSO" "-a <" $1 ">" "${TMP_DIR}/${basename}.ll" &&
-#    Run "$LLI" "${basename}.ll" ">" "${basename}.out" &&
-#    Compare ${basename}.out ${reffile}.out ${basename}.diff
-    tr -d "\n" < ${TMP_DIR}/${basename}.ll > ${TMP_DIR}/${basename}.after1
-    tr -d "\t" < ${TMP_DIR}/${basename}.after1 > ${TMP_DIR}/${basename}.after2
-    tr -d " "  < ${TMP_DIR}/${basename}.after2 > ${TMP_DIR}/${basename}.after
-    tr -d "\n" < $1 > ${TMP_DIR}/${basename}.before1
-    tr -d "\t"  < ${TMP_DIR}/${basename}.before1 > ${TMP_DIR}/${basename}.before2
-    tr -d " "  < ${TMP_DIR}/${basename}.before2 > ${TMP_DIR}/${basename}.before      
-    Compare ${TMP_DIR}/${basename}.before ${TMP_DIR}/${basename}.after ${TMP_DIR}/${basename}.diff
-    rm ${TMP_DIR}/${basename}.after1
-    rm ${TMP_DIR}/${basename}.after2
-    rm ${TMP_DIR}/${basename}.before1
-    rm ${TMP_DIR}/${basename}.before2
+    generatedfiles="$generatedfiles ${TMP_DIR}/${basename}.ll ${TMP_DIR}/${basename}.out" &&
+    Run "$ESPRESSO" "-l <" $1 ">" "${TMP_DIR}/${basename}.ll" &&
+    Run "$LLI" "${TMP_DIR}/${basename}.ll" ">" "${TMP_DIR}/${basename}.out" &&
+    Compare ${TMP_DIR}/${basename}.out ${reffile}.out ${TMP_DIR}/${basename}.diff
+    # tr -d "\n" < ${TMP_DIR}/${basename}.ll > ${TMP_DIR}/${basename}.after1
+    # tr -d "\t" < ${TMP_DIR}/${basename}.after1 > ${TMP_DIR}/${basename}.after2
+    # tr -d " "  < ${TMP_DIR}/${basename}.after2 > ${TMP_DIR}/${basename}.after
+    # tr -d "\n" < $1 > ${TMP_DIR}/${basename}.before1
+    # tr -d "\t"  < ${TMP_DIR}/${basename}.before1 > ${TMP_DIR}/${basename}.before2
+    # tr -d " "  < ${TMP_DIR}/${basename}.before2 > ${TMP_DIR}/${basename}.before      
+    # Compare ${TMP_DIR}/${basename}.before ${TMP_DIR}/${basename}.after ${TMP_DIR}/${basename}.diff
+    # rm ${TMP_DIR}/${basename}.after1
+    # rm ${TMP_DIR}/${basename}.after2
+    # rm ${TMP_DIR}/${basename}.before1
+    # rm ${TMP_DIR}/${basename}.before2
     # Report the status and clean up the generated files
 
     if [ $error -eq 0 ] ; then
@@ -123,14 +126,15 @@ CheckFail() {
 
     echo -n "$basename..."
 
+
     echo 1>&2
     echo "###### Testing $basename" 1>&2
 
     generatedfiles=""
 
-    generatedfiles="$generatedfiles ${basename}.err ${basename}.diff" &&
-    RunFail "$ESPRESSO" "-a <" $1 "2>" "${basename}.err" ">>" $globallog &&
-    Compare ${basename}.err ${reffile}.err ${basename}.diff
+    generatedfiles="$generatedfiles ${TMP_DIR}/${basename}.err ${TMP_DIR}/${basename}.diff" &&
+    RunFail "$ESPRESSO" "<" $1 "2>" "${TMP_DIR}/${basename}.err" ">>" $globallog &&
+    Compare ${TMP_DIR}/${basename}.err ${reffile}.err ${TMP_DIR}/${basename}.diff
 
     # Report the status and clean up the generated files
 
@@ -181,9 +185,9 @@ do
 	*test_*)
 	    Check $file 2>> $globallog
 	    ;;
-#	*fail_*)
-#	    CheckFail $file 2>> $globallog
-#	    ;;
+	*fail_*)
+	    CheckFail $file 2>> $globallog
+	    ;;
 	*)
 	    echo "unknown file type $file"
 	    globalerror=1
