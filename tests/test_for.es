@@ -14,7 +14,7 @@ class test_return
 	{
 		int a;
 		class test_return obj;
-		print_int(test_return.abc());
+		print_int(obj.abc());
 		return 1;
 	}
 	
