@@ -4,8 +4,8 @@ class Work {
 }
 
 class Test {
-  int x;
-  int main(int y) {
+//  int x;
+  int main() {
      class Work wObj;
      int [10]arr;
      int x;
@@ -13,7 +13,7 @@ class Test {
      hashmap<int,int> map;
      class Work [5]wArr;
      x = map{x};
-     map{arr[0]} = x;
+    map{arr[0]} = x;
      wArr[6] = wObj;     
      return 0;
    }

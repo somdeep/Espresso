@@ -10,7 +10,7 @@ class Work {
 
 class Test {
  
-  int main(int y) {
+  int main() {
      x = 10;
      class Work w;
      x = x + w.get_work_from_work();

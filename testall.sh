@@ -17,7 +17,7 @@ ESPRESSO="./espresso.native"
 # Set time limit for all operations
 ulimit -t 30
 TMP_DIR="_tmp2"
-mkdir ${TMP_DIR}
+mkdir -p ${TMP_DIR}
 rm ${TMP_DIR}/*.*
 globallog=testall.log
 rm -f $globallog

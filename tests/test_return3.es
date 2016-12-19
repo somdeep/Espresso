@@ -8,8 +8,8 @@ class test_return
 	int main()
 	{
 		int a;
-		class test_return obj;
-		print_int(obj.abc());
+
+		print_int(this.abc());
 		return 1;
 	}
 	

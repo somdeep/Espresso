@@ -1,6 +1,5 @@
 class Test
 {
-	int a;
 	void main()
 	{
 		int[10] a;
@@ -8,10 +7,10 @@ class Test
 		foreach( int c : a)
 		{
 			int abc;
-			c = c + 1;
-			if(c == 5)
+//			c = c + 1;
+//			if(c == 5)
 			   print_int(c);
-			break;
+
 		}
 	}
 }
