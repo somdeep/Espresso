@@ -152,6 +152,21 @@ and binop_gen llbuilder expr1 op expr2 dt =
   match_types dt
 
 
+and unop_gen llbuilder op expr dt =
+  let unop_type = Sem.get_type_from_sexpr expr in
+  let unop_llvalue = sexpr_gen llbuilder expr in
+  let build_unop op utype exp_llval = match (op, utype) with
+    (A.Sub, A.Datatype(Int)) -> L.build_neg exp_llval "int_unop_tmp" llbuilder
+  | (A.Sub, A.Datatype(Float)) -> L.build_fneg exp_llval "float_unop_tmp" llbuilder
+  | (A.Not, A.Datatype(Bool)) -> L.build_not exp_llval "bool_unop_tmp" llbuilder
+  | _ -> raise(Failure("unsupported operator " ^ (A.string_of_uop op) ^ " and type " ^ (A.string_of_datatype utype) ^ " for unop"))
+  in
+  let handle_unop_type dt = match dt with
+      A.Datatype(Int) | A.Datatype(Float) | A.Datatype(Bool) -> build_unop op dt unop_llvalue
+  |   _ -> raise(Failure("invalid type for unop" ^ (A.string_of_datatype dt)))
+  in
+  handle_unop_type dt
+
 (*Code generation for Object Access*)
 and obj_access_gen llbuilder lhs rhs d isAssign =
 
@@ -323,6 +338,7 @@ and sexpr_gen llbuilder = function
   | SCharlit(c) ->  L.const_int i8_t  (Char.code c)
   | SId(name,dt)  ->  id_gen llbuilder name dt true false
   | SBinop(expr1, op, expr2, dt) -> binop_gen llbuilder expr1 op expr2 dt 
+  | SUnop(op, e, dt) -> unop_gen llbuilder op e dt
   | SAssign(exp1,exp2,dt) ->  assign_gen llbuilder exp1 exp2 dt
   | SCall(name, expr_list, dt) -> call_gen llbuilder name expr_list dt
   | SArrayAccess(name,exp,dt) ->  array_access_gen llbuilder name exp dt false

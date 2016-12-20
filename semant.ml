@@ -359,9 +359,14 @@ and check_assignment env expr1 expr2 =
 																	if t1 = t2 
 																		then SAssign(sexpr1, sexpr, type_id) 
 																		else raise (Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id)))
-									|	_,_ -> if type_id = type_sexpr
+											|	_,_ -> if type_id = type_sexpr
 												then SAssign(sexpr1, sexpr, type_id)
-												else raise(Failure ("illegal assignment from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
+												else match (type_id, type_sexpr) with 
+													ArrayType(p1,_), ArrayType(p2, _) -> if p1 = p2 then SAssign(sexpr1, sexpr, type_sexpr)
+																									else raise(Failure ("illegal assignment here from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))	
+													|	_,_ -> 
+														raise(Failure ("illegal assignment here from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
+												
 									)
 	|	_ -> raise(Failure("lvalue required for assignment "))
 	
@@ -539,7 +544,10 @@ and check_call env func_name expr_list = match env.env_name with
 				let param_type = get_type_from_sexpr param in
 				if formal_type = param_type 
 					then param
-					else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ (string_of_datatype param_type)))
+					else match (formal_type, param_type) with
+						ArrayType(p1,_),ArrayType(p2,_) -> if p1 = p2 then param
+																	  else raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ (string_of_datatype param_type)))
+					| _,_ -> raise (Failure("Type mismatch. Expected " ^ string_of_datatype formal_type ^ " but got " ^ (string_of_datatype param_type)))
 			in
 
 			(* check lengths of formal and passed parameters and get actual parameters *)
@@ -657,7 +665,6 @@ and check_lambda env id formals st ret_typ=
 							env_reserved = old_env.env_reserved;
 						}
 						in
-						(*lambda_count := !lambda_count + 1;*)
 						(* generate an sfunc_decl object to transform the lamda into a function *)
 
 						let lambda_sfdecl = {
@@ -669,9 +676,6 @@ and check_lambda env id formals st ret_typ=
 							scontext_class =  "Lambda";
 							sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
 						} in
-						(* add the lambda to a lambda_func_map keyed by it's name. 
-							This is why the name must be unique *)
-						(*lambda_func_map := StringMap.add id lambda_sfdecl !lambda_func_map ;*)
 						(* add this lambda to the global list of lambda functions *)
 						lambda_funcs := (lambda_sfdecl :: !lambda_funcs) ;
 						SLocal(Ast.Datatype(Lambda), id), old_env
@@ -851,7 +855,6 @@ let handle_lambdas cdecl =
 							scontext_class =  "Lambda";
 							sthis_ptr = SId("Lambda",Datatype(ObjTyp("Lambda")));
 						} in
-						lambda_count := !lambda_count + 1;
 						ignore(lambda_func_map := StringMap.add id lambda_prototype !lambda_func_map) ;
 						"done"
 			)
