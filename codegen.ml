@@ -234,7 +234,10 @@ and assign_gen llbuilder lhs rhs dt =
   in
 
   let rhs = match rhs with
-  | Sast.SId(id,dt) ->  id_gen llbuilder id dt true false
+  | Sast.SId(id,dt) -> ( match dt with 
+                      | A.Datatype(ObjTyp(_)) -> id_gen llbuilder id dt false false
+                      | _ -> id_gen llbuilder id dt true false
+                       )
   | Sast.SObjectAccess(e1,e2,d) ->  obj_access_gen llbuilder e1 e2 d true
   | _ ->  sexpr_gen llbuilder rhs
   in
