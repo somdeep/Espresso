@@ -8,6 +8,7 @@ int main(int y) {
 	z = 1;
 	if(b >= 10)
 		z = 2;
+    print_int(z);
     return z;
    }
 }

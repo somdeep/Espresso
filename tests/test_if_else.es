@@ -2,11 +2,13 @@ class Test {
 
 int main(int a) {
     bool x;
-    x = true;
+    x = false;
+    int z;
+    z = 0;
     if(x)
-    	return 1;
+    	z = 1;
     else
-    	return 0;
+    	z = 2;
     return 3;
    }
 }

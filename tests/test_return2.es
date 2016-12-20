@@ -12,10 +12,5 @@ class test_return
 		print_int(obj.abc());
 		return 1;
 	}
-	
-	String a()
-	{
-		return "a";
-	}
 }
 

@@ -3,16 +3,14 @@ class Test {
 int main(int a) {
     int x;
     int y;
+    int z;
+    z = 0;
 	for(x =0; x <10;x = x + 1) {
-	    x = x +2;
-
-	    for(y = 7; y < 20 ; y = y+2){
-	    	y = y + 1 ;
+	    for(y = 0; y < 5 ; y = y+1){
+	    	z = z + 1 ;
 	    }
 	}
-	print_int(x);
-	print_string("\n");
-	print_int(y);
+	print_int(z);
     return 0;
    }
 }

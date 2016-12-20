@@ -7,11 +7,6 @@ class test_return
 		print_int(obj.handle());
 		return 1;
 	}
-	
-	String a()
-	{
-		return "a";
-	}
 }
 
 class work

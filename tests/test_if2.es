@@ -11,6 +11,7 @@ int main(int a) {
     	z = 2;
     if (y)
     	z = 3;
+    print_int(z);
     return z;
    }
 }

@@ -3,10 +3,12 @@ class test_while
 	int abc()
 	{
 		int i;
+		i = 0;
 		int sum;
 		while(i<5)
 		{
 			sum = sum + i;
+			i = i + 1;
 		}
 		return sum;
 	}
