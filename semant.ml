@@ -364,6 +364,7 @@ and check_assignment env expr1 expr2 =
 												else match (type_id, type_sexpr) with 
 													ArrayType(p1,_), ArrayType(p2, _) -> if p1 = p2 then SAssign(sexpr1, sexpr, type_sexpr)
 																									else raise(Failure ("illegal assignment here from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))	
+												    | ArrayType(Char, _) , Datatype(String) -> SAssign(sexpr1, sexpr, type_id)
 													|	_,_ -> 
 														raise(Failure ("illegal assignment here from " ^ (string_of_datatype type_sexpr) ^ " to " ^ (string_of_datatype type_id) ))
 												
@@ -387,10 +388,13 @@ and check_relational_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) wit
 	|	_,_ -> raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for comparison operations "))
 
 (* Assuming that the types on either side are equal - no implicit type casting/ type promotions *)
-and check_equality_ops sexpr1 sexpr2 op type1 type2 = 
-	if type1 = type2 
-		then SBinop(sexpr1, op, sexpr2, Datatype(Bool))
-		else raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for equality operations "))
+and check_equality_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) with
+		(* we cast characters and integers based on the lhs in the codegen *)
+		Datatype(Char), Datatype(Int) | Datatype(Int) , Datatype(Char) -> SBinop(sexpr1, op, sexpr2, Datatype(Bool))
+	| _ -> 
+		if type1 = type2 
+			then SBinop(sexpr1, op, sexpr2, Datatype(Bool))
+			else raise(Failure("types " ^ (string_of_datatype type1) ^ " and " ^ (string_of_datatype type2) ^ " are incompatible for equality operations "))
 
 (* supports only boolean types *)
 and check_logical_ops sexpr1 sexpr2 op type1 type2 = match (type1, type2) with

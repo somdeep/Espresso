@@ -103,6 +103,8 @@ let rec id_gen llbuilder id dt isderef checkparam =
 and binop_gen llbuilder expr1 op expr2 dt = 
   let le1 = sexpr_gen llbuilder expr1 in
   let le2 = sexpr_gen llbuilder expr2 in
+  let type1 = Sem.get_type_from_sexpr expr1 in
+  let type2 = Sem.get_type_from_sexpr expr2 in
 
   let int_ops e1 op e2 = match op with
   		A.Add 		-> L.build_add e1 e2 "addtmp" llbuilder
@@ -145,7 +147,7 @@ and binop_gen llbuilder expr1 op expr2 dt =
 
   let match_types dt = match dt with
     A.Datatype(Float) -> float_ops le1 op le2 
-  | A.Datatype(Int) | A.Datatype(Bool) | A.Datatype(Char) -> int_ops le1 op le2
+  | A.Datatype(Int) | A.Datatype(Bool) | A.Datatype(Char) ->int_ops le1 op le2
   | A.Datatype(ObjTyp(_)) | A.ArrayType(_,_) | A.Hashmaptype(_,_) ->  non_primitive_types le1 op le2
   | _ -> raise(Failure("Unrecognized datatype! "))
   in
