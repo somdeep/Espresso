@@ -1,7 +1,9 @@
 class Test {
 
-int main(int y) {
-	//print_string("hello,world")
+int main() {
+	String s;
+	s = "hello,world";
+	print_string(s);
     return 0;
    }
 }

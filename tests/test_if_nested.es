@@ -13,6 +13,7 @@ int main(int a) {
     		z = z+3;
     	}
     }
-    return z;
+    print_int(z);
+    return 0;
    }
 }

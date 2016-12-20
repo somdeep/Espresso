@@ -13,9 +13,8 @@ class Test {
   int x;
 
   int main(int y) {
-     this.x = 10;
      class Work w;
-     w.work_field = w.test_obj.x + w.mem_func('a');
+     w.work_field =  w.mem_func('a');
 	   print_int(w.work_field);
      return 0;
    }

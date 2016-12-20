@@ -14,12 +14,12 @@ class test_return
 		return j;
 	}
 
-	int main()
+	int main(int a)
 	{
 		int a;
 		class test_return obj;
 		print_int(obj.abc());
-		return 1;
+		return 0;
 	}
 	
 	String a()

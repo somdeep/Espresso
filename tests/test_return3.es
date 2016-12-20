@@ -10,7 +10,7 @@ class test_return
 		int a;
 
 		print_int(this.abc());
-		return 1;
+		return 0;
 	}
 	
 	String a()
