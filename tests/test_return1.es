@@ -5,7 +5,7 @@ class test_return
 		int a;
 		class work obj;
 		print_int(obj.handle());
-		return 1;
+		return 0;
 	}
 }
 

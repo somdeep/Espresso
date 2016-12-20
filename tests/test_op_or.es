@@ -6,7 +6,7 @@ int main(int a) {
     x = 1;
     y = 2;
     bool z;
-    if(x == 2 || y ==1)
+    if(x == 1 || y ==2)
     	print_int(3);
     else
     	print_int(0); 

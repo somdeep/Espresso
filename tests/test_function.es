@@ -6,6 +6,6 @@ class Test {
   		int z;
   		z = plus(2,3);
 		print_int(z);
-  		return z;
+  		return 0;
    }
 }

@@ -9,6 +9,6 @@ int main(int y) {
 	if(b >= 10)
 		z = 2;
     print_int(z);
-    return z;
+    return 0;
    }
 }

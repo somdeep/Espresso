@@ -8,6 +8,6 @@ int main(int y) {
 	z = 1;
 	if(10 >= b)
 		z = 2;
-    return z;
+    return 0;
    }
 }

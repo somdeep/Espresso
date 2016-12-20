@@ -3,9 +3,11 @@ class Test {
 int main(int a) {
     bool x;
     x = true;
-    if(x){
-    	return 1;
-    }
+    int z;
+    z =1;
+    if(x)
+    	z = 2;
+    print_int(z);
     return 0;
    }
 }

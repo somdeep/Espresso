@@ -5,6 +5,7 @@ class test_while
 		int i;
 		i = 0;
 		int sum;
+		sum = 0;
 		while(i<5)
 		{
 			sum = sum + i;
@@ -18,6 +19,6 @@ class test_while
 		int a;
 		class test_while obj;
 		print_int(obj.abc());
-		return 1;
+		return 0;
 	}
 }

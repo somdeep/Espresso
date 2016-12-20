@@ -10,7 +10,7 @@ class test_return
 		int a;
 		class test_return obj;
 		print_string(a());
-		return 1;
+		return 0;
 	}
 	
 	String a()

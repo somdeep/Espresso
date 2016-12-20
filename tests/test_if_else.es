@@ -9,6 +9,7 @@ int main(int a) {
     	z = 1;
     else
     	z = 2;
-    return 3;
+    print_int(z);
+    return 0;
    }
 }

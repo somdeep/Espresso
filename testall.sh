@@ -18,7 +18,7 @@ ESPRESSO="./espresso.native"
 ulimit -t 30
 TMP_DIR="_tmp2"
 mkdir -p ${TMP_DIR}
-rm ${TMP_DIR}/*.*
+#rm ${TMP_DIR}/*.*
 globallog=testall.log
 rm -f $globallog
 error=0
@@ -80,7 +80,7 @@ Check() {
     reffile=`echo $1 | sed 's/.es$//'`
     basedir="`echo $1 | sed 's/\/[^\/]*$//'`/."
 
-    echo -n "$basename...\n"
+    echo -n "$basename..."
 
     echo 1>&2
     echo "###### Testing $basename" 1>&2
