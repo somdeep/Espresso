@@ -1,5 +1,0 @@
-1. Ast -> Sast as well as clean up semant.ml
-2. codegen.ml - generalist print - Hello World - any string - 
-3. (Related to 2) - make generelized function calls work.
-4. Test Suite - start basics - valid and invalid
-5. Multiple classes and object behaviour
