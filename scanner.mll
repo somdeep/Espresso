@@ -1,4 +1,4 @@
-(* Ocamllex scanner for MicroC *)
+(* Ocamllex scanner for Espresso *)
 
 { open Parser 
 
@@ -78,5 +78,3 @@ and comment = parse
 and sincom = parse
   "\n" { token lexbuf }
 | _    { sincom lexbuf }
-
-
