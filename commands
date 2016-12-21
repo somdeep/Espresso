@@ -1,3 +1,0 @@
-llc objarray.ll -march=x86-64 -o objarray.s
-mpicc -O0 objarray.s -o objarray
-./objarray
